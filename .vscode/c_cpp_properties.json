@@ -1,0 +1,10 @@
+{
+    "configurations": [
+        {
+            "name": "HeatStrokeECS",
+            "compileCommands": "${workspaceFolder}/build/debug/compile_commands.json",
+            "cppStandard": "c++23"
+        }
+    ],
+    "version": 4
+}

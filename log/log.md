@@ -3,7 +3,35 @@
 Registro de progreso diario del desarrollo del ECS de arquetipos con job system multihilo, dentro del TFG de HeatStroke Engine.
 
 ---
+## 2026-09-05
 
+**Fase:** Fase0 - Puesta en marcha
+
+**Tiempo invertido:** 2h
+
+### Qué he hecho hoy
+- Instalado herramientas necesarias (Msys, Camke, mingw... )
+- Configurado CMajeLists.txt para compilar de manera sencilla el proyecto
+- Creado ecs.hpp/ecs.cpp y main.cpp como prueba
+- Todo compila y se ejecuta sin problema.
+
+### Decisiones de diseño
+- Usar Cmake debido a su facilidad y ser ampliamente usado para librerias
+- Estructura del proyecto carpeta code/source + code/include
+- Se usara la version de C++ 23
+
+### Problemas / bloqueos
+- Instalar todo lo necesario para poder compilar C++ y usar cmake.
+- Decidir la estructura de la libreria
+
+### Aprendizajes
+- Como funciona Cmake, añadir librerias, archivos de cabecera, flags...
+
+### Próximos pasos
+- Investigar sobre el DOP (data oriented programing)
+- Primer prototipo de ECS sencillo
+
+---
 ## 2026-09-05
 
 **Fase:** Fase 0 — Puesta en marcha.
