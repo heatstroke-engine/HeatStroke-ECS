@@ -3,6 +3,31 @@
 Registro de progreso diario del desarrollo del ECS de arquetipos con job system multihilo, dentro del TFG de HeatStroke Engine.
 
 ---
+## 2026-09-07
+
+**Fase:** Fase0 - Puesta en marcha
+
+**Tiempo invertido:** 1h
+### Qué he hecho hoy
+- He visualizado la conferencia de  Vittorio Romeo en la CppCon 2025 sobre [Practical Data-Oriented Design in C++](https://www.youtube.com/watch?v=SzjJfKHygaQ)
+
+### Decisiones de diseño
+- NA
+
+### Problemas / bloqueos
+- NA
+
+### Aprendizajes
+- He aprendido sobre el diseño orientado a datos:
+    - Los datos estan siempre expuestos.
+    - Se centra en la actualizacion del estado de los mismos datos.
+    - El bucle es el que decide como se actualizan dichos datos.
+    - Estudiar el hardware donde piensas trabajar para poder exprimirlo al maximo.
+    - Suprimir herencia/single heap allocations.
+
+### Próximos pasos
+- Implementar un ECS sencillo empleando el DOD (Data oriented desing).
+
 ## 2026-09-05
 
 **Fase:** Fase0 - Puesta en marcha
@@ -28,7 +53,7 @@ Registro de progreso diario del desarrollo del ECS de arquetipos con job system 
 - Como funciona Cmake, añadir librerias, archivos de cabecera, flags...
 
 ### Próximos pasos
-- Investigar sobre el DOP (data oriented programing)
+- Investigar sobre el DOD (data oriented desing)
 - Primer prototipo de ECS sencillo
 
 ---
