@@ -2,6 +2,36 @@
 
 Registro de progreso diario del desarrollo del ECS de arquetipos con job system multihilo, dentro del TFG de HeatStroke Engine.
 
+
+
+---
+## 2026-09-09
+
+**Fase:** Fase1 - ECS basico
+
+**Tiempo invertido:** 1h
+
+### Qué he hecho hoy
+- Creada la rama sw/ecs/basic/1.0 Donde se desarrolla un ECS basico con slotmaps.
+- Diseñar la carcasa de EntityManager.
+
+### Decisiones de diseño
+_(elecciones tomadas y por qué, alternativas descartadas)_
+- Entity sera un struct dentro de EntityManager. Las entidades viven para el EntityManager
+- Usar template para pasar la lista de componentes existentes a la clase.
+
+### Problemas / bloqueos
+- Necesito desarrollar el almacenamiento para los componentes (Slotmaps).
+- Necesito metaprogramacion para las CMPs traits que mas adelante usaremos para gestionar nuestras entidades.
+
+### Aprendizajes
+_(algo nuevo entendido sobre DOD, arquetipos, concurrencia, etc.)_
+- NA (Ya hice esto en la carrera) 
+
+### Próximos pasos
+- Ver los videos de Francisco Garcia duran (RetroMan). Sobre Slotmaps y metaprogramcion.
+- Una vez vistos los videos, proceder a implementarlo en este ECS basico.
+
 ---
 ## 2026-09-07
 
