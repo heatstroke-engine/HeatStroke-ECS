@@ -29,7 +29,7 @@ _(algo nuevo entendido sobre DOD, arquetipos, concurrencia, etc.)_
 - NA (Ya hice esto en la carrera) 
 
 ### Próximos pasos
-- Ver los videos de Francisco Garcia duran (RetroMan). Sobre Slotmaps y metaprogramcion.
+- Ver los videos de Francisco Gallego Duran (Profesor Retroman), sobre [Slotmaps](https://www.youtube.com/watch?v=ZfWF9tqQOh0) y [metaprogramcion](https://www.youtube.com/watch?v=4NKbmCfZ9OI).
 - Una vez vistos los videos, proceder a implementarlo en este ECS basico.
 
 ---

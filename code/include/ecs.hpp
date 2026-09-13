@@ -1,13 +1,13 @@
 #pragma once
 
 #include <vector>
-
+#include <iostream>
 namespace HeatStroke
 {
     /*
      * EntityManager will provide a way to create and manage entities and their components.
      */
-    template<typename... CMPS, std::size_t MAX_CMPS = 1000>
+    template<std::size_t MAX_CMPS = 1000>
     class EntityManager
     {
         public:
@@ -24,11 +24,16 @@ namespace HeatStroke
              */
             void addEntity(Entity& entity);
 
+            /**
+             * Removes an entity from the manager.
+             */
+            void removeEntity(std::size_t entityId);
+
             /*
              * Adds a component to the specified entity.
              */
             template<typename CMP>
-            CMP& addComponent(Entity& entity, CMP component);
+            CMP& addComponent(Entity& entity, CMP&& component);
 
             /*
              * Removes a component from the specified entity.
@@ -41,18 +46,64 @@ namespace HeatStroke
              */
             struct Entity
             {
-                static std::size_t ID_COUNTER;
-
-                Entity();
-
-                inline std::size_t getId() const;
-
+                inline static std::size_t ID_COUNTER = 0;
+                
+                Entity() = default;
+                
+                std::size_t getId() const;
+                
                 // Entity data members
-                std::size_t id;
+                private:
+
+                    std::size_t id{++ID_COUNTER};
 
                 
             };
-        private:
+            
+            EntityManager();
+            private:
             std::vector<Entity> entities;
     };
+        
+
+    template<std::size_t MAX_CMPS>
+    EntityManager<MAX_CMPS>::Entity& EntityManager<MAX_CMPS>::createEntity()
+    {
+        return entities.emplace_back();
+    }
+
+    template<std::size_t MAX_CMPS>
+    void EntityManager<MAX_CMPS>::addEntity(Entity& entity)
+    {
+        entities.push_back(entity);
+    }
+
+    template<std::size_t MAX_CMPS>
+    void EntityManager<MAX_CMPS>::removeEntity(std::size_t entityId)
+    {
+        for(std::size_t i = 0; i < entities.size(); ++i)
+        {
+            if(entities[i].getId() == entityId)
+            {
+                // Here we must remove all entity components, but for now we will just remove the entity from the list.
+                entities[i] = entities.back();
+                entities.pop_back();
+                std::cout << "Entities size: " << entities.size() << std::endl;
+                return;
+            }
+        }
+    }
+
+    template<std::size_t MAX_CMPS>
+    std::size_t EntityManager<MAX_CMPS>::Entity::getId() const
+    {
+        return id;
+    }
+
+    template<std::size_t MAX_CMPS>
+    EntityManager<MAX_CMPS>::EntityManager()
+    {
+        entities.reserve(MAX_CMPS);
+    }
+    
 } // namespace HeatStroke
