@@ -1,7 +1,7 @@
 #pragma once
 
+#include <warning.hpp>
 #include <array>
-#include <cassert>
 namespace HeatStroke
 {   
     /*
@@ -46,7 +46,7 @@ namespace HeatStroke
 
             [[nodiscard]] inline constexpr Data_t& operator[](const key_type key) noexcept
             {
-                assert(is_valid(key));
+                runTimeAssertion(is_valid(key));
 
                 return data_[key.id];
             }
@@ -118,7 +118,7 @@ namespace HeatStroke
     constexpr SlotMap<Data_t, Capacity>::allocate()
     {
 
-        assert(size_ < Capacity);
+        runTimeAssertion(size_ < Capacity);
         
         // Reserve
         index_type slotId = freelist_;
@@ -159,7 +159,7 @@ namespace HeatStroke
     template<typename Data_t, std::size_t Capacity>
     constexpr void SlotMap<Data_t,Capacity>::free(const key_type key) noexcept
     {
-        assert(is_valid(key)); // This cant happen.
+        runTimeAssertion(is_valid(key)); // This cant happen.
 
         key_type& slot = indices_[key.id];
         
