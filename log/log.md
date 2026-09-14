@@ -4,7 +4,33 @@ Registro de progreso diario del desarrollo del ECS de arquetipos con job system 
 
 
 
+
 ---
+
+## 2026-09-14
+
+**Fase:** Fase1 - ECS basico
+
+**Tiempo invertido:** 3h
+
+### Qué he hecho hoy
+- Implementar el Slotmap para el dummy ECS
+-
+
+### Decisiones de diseño
+- ECS con array(tamaño estatico) se podria haber usado vector, pero como lo que se quiere es hacerlo lo mas simple posible.
+
+### Problemas / bloqueos
+- Ninguno
+
+### Aprendizajes
+- Repaso sobre que era un Slotmap y su funcionamiento interno
+
+### Próximos pasos
+- Metaprogramacion para tener los cmps traits y poder actualizar las mascaras de nuestras entidades.
+
+---
+
 ## 2026-09-09
 
 **Fase:** Fase1 - ECS basico
