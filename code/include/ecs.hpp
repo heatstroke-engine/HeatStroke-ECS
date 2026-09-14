@@ -61,8 +61,11 @@ namespace HeatStroke
             };
             
             EntityManager();
+            // Deleted functions
+            EntityManager(const EntityManager& rhs) = delete;
+            EntityManager& operator=(const EntityManager& rhs) = delete;
             private:
-            std::vector<Entity> entities;
+                std::vector<Entity> entities;
     };
         
 
