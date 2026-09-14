@@ -38,6 +38,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)  # genera compile_commands.json (autocompl
 # =========================================================================
 add_library(heatstroke_ecs STATIC
     code/source/ecs.cpp
+    code/source/warning.cpp
 )
 
 # Carpeta donde este target (y quien lo use) busca sus #include
