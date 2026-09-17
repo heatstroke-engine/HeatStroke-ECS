@@ -1,7 +1,8 @@
 #pragma once
 
-#include <warning.hpp>
 #include <array>
+#include <warning.hpp>
+
 namespace HeatStroke
 {   
     /*

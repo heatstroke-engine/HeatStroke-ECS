@@ -1,14 +1,39 @@
 #include <iostream>
 
-#include <slotmap.hpp>
+#include <ecs.hpp>
 
 
+/*
+    Dummy CMPs
+*/
+struct CTransform
+{
+
+};
+struct CPhysics
+{
+
+};
+struct CRender
+{
+
+};
+/*
+    Dummy TAgs
+*/
+struct TPlayer{};
+struct TEnemy{};
+struct TBullet{};
+
+using CMPs = MP::Typelist<CTransform, CPhysics, CRender>;
+using TAGs = MP::Typelist<TPlayer, TEnemy, TBullet>;
+
+using GameEngine = HeatStroke::EntityManager<CMPs, TAGs>;
 int main() {
 
-    HeatStroke::SlotMap<int, 1> slotMap;   
+    GameEngine GE;
 
+    compileTimeAssertion(TAGs::pos<TEnemy>() == 1);
 
-    compileTimeAssertion(false);
-    
     return 0;
 }
