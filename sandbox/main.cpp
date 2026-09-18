@@ -26,14 +26,21 @@ struct TEnemy{};
 struct TBullet{};
 
 using CMPs = MP::Typelist<CTransform, CPhysics, CRender>;
-using TAGs = MP::Typelist<TPlayer, TEnemy, TBullet>;
+using TAGs = MP::Typelist<TPlayer, TEnemy, TBullet >;
 
 using GameEngine = HeatStroke::EntityManager<CMPs, TAGs>;
+
+void seetype(auto)
+{
+    std::cout << __PRETTY_FUNCTION__ << "\n";
+}
+
 int main() {
 
     GameEngine GE;
 
-    compileTimeAssertion(TAGs::pos<TEnemy>() == 1);
+
+    seetype(GameEngine::Storage_t{});
 
     return 0;
 }

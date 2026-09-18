@@ -23,12 +23,16 @@ namespace HeatStroke
     /*
      * EntityManager will provide a way to create and manage entities and their components.
      */
-    template<typename CMPS, typename TAGS>
+    template<typename CMPS, typename TAGS, std::size_t Capacity = 1000>
     class EntityManager
     {
         public:
-            using cmps = cmp_traits<CMPS>;
-            using tags = tag_traits<TAGS>;
+            using cmps_type = cmp_traits<CMPS>;
+            using tags_type = tag_traits<TAGS>;
+            using Cmps_slotmaps = MP::fill_container_t<HeatStroke::SlotMap, Capacity, CMPS>;
+            using Storage_t = MP::replace_t<std::tuple, Cmps_slotmaps>;
+
+            
             // FW of Entity
             struct Entity;
             
@@ -87,20 +91,20 @@ namespace HeatStroke
     };
         
 
-    template<typename CMPS, typename TAGS>
-    EntityManager<CMPS, TAGS>::Entity& EntityManager<CMPS, TAGS>::createEntity()
+    template<typename CMPS, typename TAGS, std::size_t Capacity>
+    EntityManager<CMPS, TAGS, Capacity>::Entity& EntityManager<CMPS, TAGS, Capacity>::createEntity()
     {
         return entities.emplace_back();
     }
 
-    template<typename CMPS, typename TAGS>
-    void EntityManager<CMPS, TAGS>::addEntity(Entity& entity)
+    template<typename CMPS, typename TAGS, std::size_t Capacity>
+    void EntityManager<CMPS, TAGS, Capacity>::addEntity(Entity& entity)
     {
         entities.push_back(entity);
     }
 
-    template<typename CMPS, typename TAGS>
-    void EntityManager<CMPS, TAGS>::removeEntity(std::size_t entityId)
+    template<typename CMPS, typename TAGS, std::size_t Capacity>
+    void EntityManager<CMPS, TAGS, Capacity>::removeEntity(std::size_t entityId)
     {
         for(std::size_t i = 0; i < entities.size(); ++i)
         {
@@ -115,14 +119,14 @@ namespace HeatStroke
         }
     }
 
-    template<typename CMPS, typename TAGS>
-    std::size_t EntityManager<CMPS, TAGS>::Entity::getId() const
+    template<typename CMPS, typename TAGS, std::size_t Capacity>
+    std::size_t EntityManager<CMPS, TAGS, Capacity>::Entity::getId() const
     {
         return id;
     }
 
-    template<typename CMPS, typename TAGS>
-    EntityManager<CMPS, TAGS>::EntityManager()
+    template<typename CMPS, typename TAGS, std::size_t Capacity>
+    EntityManager<CMPS, TAGS, Capacity>::EntityManager()
     {
         entities.reserve(1000);
     }
