@@ -123,6 +123,9 @@ namespace MP
     template<template <typename...> class New, typename List>
     using replace_t =  replace<New, List>::type;
 
+    /*
+        fill_container will provide a Typelist<> filled with a Container for each element in List.
+    */
     template<template <typename, std::size_t> class Container,std::size_t Size, typename List>
     struct fill_container
     {
