@@ -1,14 +1,15 @@
 #pragma once
 
-#include <warning.hpp>
 #include <array>
+#include <warning.hpp>
+
 namespace HeatStroke
 {   
     /*
      * SlotMap is a data structure that allows for efficient storage and retrieval of elements using a unique key.
      * It provides constant time complexity for insertion, deletion, and access operations.
      */
-    template<typename Data_t, std::size_t Capacity>
+    template<typename Data_t, std::size_t Capacity = 1000>
     class SlotMap
     {
         public:

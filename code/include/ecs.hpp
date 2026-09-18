@@ -2,15 +2,37 @@
 
 #include <vector>
 #include <iostream>
+#include <typetraits.hpp>
+#include <slotmap.hpp>
+
 namespace HeatStroke
 {
+
+    template<typename CMPLIST>
+    struct cmp_traits : MP::type_traits<CMPLIST>
+    {
+
+    };
+
+    template<typename TAGLIST>
+    struct tag_traits : MP::type_traits<TAGLIST>
+    {
+
+    };
+
     /*
      * EntityManager will provide a way to create and manage entities and their components.
      */
-    template<std::size_t MAX_CMPS = 1000>
+    template<typename CMPS, typename TAGS, std::size_t Capacity = 1000>
     class EntityManager
     {
         public:
+            using cmps_type = cmp_traits<CMPS>;
+            using tags_type = tag_traits<TAGS>;
+            using Cmps_slotmaps = MP::fill_container_t<HeatStroke::SlotMap, Capacity, CMPS>;
+            using Storage_t = MP::replace_t<std::tuple, Cmps_slotmaps>;
+
+            
             // FW of Entity
             struct Entity;
             
@@ -69,20 +91,20 @@ namespace HeatStroke
     };
         
 
-    template<std::size_t MAX_CMPS>
-    EntityManager<MAX_CMPS>::Entity& EntityManager<MAX_CMPS>::createEntity()
+    template<typename CMPS, typename TAGS, std::size_t Capacity>
+    EntityManager<CMPS, TAGS, Capacity>::Entity& EntityManager<CMPS, TAGS, Capacity>::createEntity()
     {
         return entities.emplace_back();
     }
 
-    template<std::size_t MAX_CMPS>
-    void EntityManager<MAX_CMPS>::addEntity(Entity& entity)
+    template<typename CMPS, typename TAGS, std::size_t Capacity>
+    void EntityManager<CMPS, TAGS, Capacity>::addEntity(Entity& entity)
     {
         entities.push_back(entity);
     }
 
-    template<std::size_t MAX_CMPS>
-    void EntityManager<MAX_CMPS>::removeEntity(std::size_t entityId)
+    template<typename CMPS, typename TAGS, std::size_t Capacity>
+    void EntityManager<CMPS, TAGS, Capacity>::removeEntity(std::size_t entityId)
     {
         for(std::size_t i = 0; i < entities.size(); ++i)
         {
@@ -97,16 +119,16 @@ namespace HeatStroke
         }
     }
 
-    template<std::size_t MAX_CMPS>
-    std::size_t EntityManager<MAX_CMPS>::Entity::getId() const
+    template<typename CMPS, typename TAGS, std::size_t Capacity>
+    std::size_t EntityManager<CMPS, TAGS, Capacity>::Entity::getId() const
     {
         return id;
     }
 
-    template<std::size_t MAX_CMPS>
-    EntityManager<MAX_CMPS>::EntityManager()
+    template<typename CMPS, typename TAGS, std::size_t Capacity>
+    EntityManager<CMPS, TAGS, Capacity>::EntityManager()
     {
-        entities.reserve(MAX_CMPS);
+        entities.reserve(1000);
     }
     
 } // namespace HeatStroke

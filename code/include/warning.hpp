@@ -1,6 +1,8 @@
 #pragma once
 #include <cassert>
 
+#define compileTimeAssertion(b, ...) static_assert(b, ##__VA_ARGS__)
+
 #define DEBUG_MODE
 
 #ifdef DEBUG_MODE
@@ -16,8 +18,6 @@ namespace Bsp
 
 #define runTimeAssertion(b) Bsp::runTimeAssertion_imp(static_cast<bool>(b), #b, __FILE__, __func__, __LINE__)
 
-#define compileTimeAssertion(b, ...) static_assert(b, ##__VA_ARGS__)
-
 #endif
 
 #ifndef DEBUG_MODE
@@ -25,8 +25,6 @@ namespace Bsp
 #define warning() static_cast<void>(0)
 
 #define runTimeAssertion(b) static_cast<void>(static_cast<bool>(b))
-
-#define compileTimeAssertion(b, ...) static_cast<void>(static_cast<bool>(b))
 
 
 #endif
