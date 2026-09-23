@@ -39,8 +39,11 @@ int main() {
 
     GameEngine GE;
 
+    HeatStroke::ComponentStorage<CMPs,TAGs> CS{};
 
-    seetype(GameEngine::Storage_t{});
+    seetype(GameEngine::Entity::Key_Storage_t{});
+
+
 
     return 0;
 }

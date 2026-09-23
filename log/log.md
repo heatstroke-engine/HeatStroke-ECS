@@ -2,8 +2,55 @@
 
 Registro de progreso diario del desarrollo del ECS de arquetipos con job system multihilo, dentro del TFG de HeatStroke Engine.
 
+----> Obsidian
+---
 
+## 2026-09-23
 
+**Fase:** Fase1 - ECS basico
+
+**Tiempo invertido:** 6h
+
+### Qué he hecho hoy
+- ComponentStorage realizado, el tipo del almacenamiento se deduce en tiempo de compilacion, metafunciones para devolver el storage de cada componente
+- En el entitymanager he diseñado el addComponent, que añade un componente nuevo al slotmap asi como en la entidad (Actualizando la mascara y añadiendo la Key)
+
+### Decisiones de diseño
+- Añadir un componente ya existente salta un warning y devuelve el componente actual de la entidad.
+
+### Problemas / bloqueos
+- Ninguno
+
+### Aprendizajes
+- Flujo de manejo de errores 
+
+### Próximos pasos
+- Borrar componente, asi como borrar entidad(importante borrar todos los cmps de la entidad).
+- El forech() precacheado por la firma de los sistemas.
+
+---
+
+## 2026-09-18
+
+**Fase:** Fase1 - ECS basico
+
+**Tiempo invertido:** 6h
+
+### Qué he hecho hoy
+- Metaprogramar para deducir directamente el tipo del Storage: std::tuple<Slotmap<Cmps, Capacity> ....>,
+- Type_traits para componentes y tags, que permiten asignar una id a cada una.
+
+### Decisiones de diseño
+- Tupla como almacenador de Slotmaps.
+
+### Problemas / bloqueos
+- Ninguno
+
+### Aprendizajes
+- Repaso sobre templates y metaprogramacion
+
+### Próximos pasos
+- Crear el componentStorage y permiter asociar los identificadors de cada cmps, tag a las entidades del manager.
 
 ---
 
@@ -15,7 +62,6 @@ Registro de progreso diario del desarrollo del ECS de arquetipos con job system 
 
 ### Qué he hecho hoy
 - Implementar el Slotmap para el dummy ECS
--
 
 ### Decisiones de diseño
 - ECS con array(tamaño estatico) se podria haber usado vector, pero como lo que se quiere es hacerlo lo mas simple posible.

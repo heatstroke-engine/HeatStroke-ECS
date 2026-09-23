@@ -1,8 +1,7 @@
 #pragma once
 
-#include <cassert>
+#include <warning.hpp>
 #include <cstdint>
-#include <tuple>
 
 namespace MP
 {   
@@ -45,7 +44,7 @@ namespace MP
     template<std::size_t N, typename... Ts>
     struct nth_type
     {
-        static_assert(sizeof...(Ts) != 0, "Error: TypeList with 0 types.");
+        compileTimeAssertion(sizeof...(Ts) != 0, "Error: TypeList with 0 types.");
     };
 
     template<std::size_t N, typename... Ts>
@@ -69,7 +68,7 @@ namespace MP
     template<typename T, typename... Ts>
     struct pos_type
     {
-        static_assert(sizeof...(Ts) != 0 );
+        compileTimeAssertion(sizeof...(Ts) != 0 );
     };
 
     template<typename T, typename... Ts>
@@ -126,20 +125,20 @@ namespace MP
     /*
         fill_container will provide a Typelist<> filled with a Container for each element in List.
     */
-    template<template <typename, std::size_t> class Container,std::size_t Size, typename List>
-    struct fill_container
+    template<template <class... > class Container, typename List>
+    struct for_all_insert_template
     {
 
     };
 
-    template<template <typename, std::size_t> class Container,std::size_t Size,  typename... Ts>
-    struct fill_container<Container, Size, Typelist<Ts...>> : type_id<Typelist<Container<Ts, Size>...>>
+    template<template <class... > class Container,  typename... Ts>
+    struct for_all_insert_template<Container, Typelist<Ts...>> : type_id<Typelist<Container<Ts>...>>
     {
 
     };
 
-    template<template <typename, std::size_t> class Container,std::size_t Size, typename List>
-    using fill_container_t = fill_container<Container, Size, List>::type;
+    template<template <class... > class Container, typename List>
+    using for_all_insert_template_t = for_all_insert_template<Container, List>::type;
     /*
         Typelist will handle packs of types.
     */
@@ -160,7 +159,7 @@ namespace MP
         template<typename T>
         consteval static std::size_t pos() noexcept
         {
-            static_assert(contains<T>() && "T is not part of the typelist");
+            compileTimeAssertion(contains<T>() && "T is not part of the typelist");
             return pos_type_v<T,Ts...>;
         }
 
@@ -173,6 +172,7 @@ namespace MP
     struct type_traits
     {
         constexpr static uint8_t list_size = TL::size();
+        compileTimeAssertion(list_size <= 64);
         using mask_type =   IFT_t< list_size <= 32 ,
                                     IFT_t< list_size <= 16, 
                                     IFT_t<list_size <= 8, uint8_t, 
@@ -192,10 +192,10 @@ namespace MP
             return TL::template pos<T>();
         }
 
-        template<typename T>
+        template<typename... Ts>
         consteval static mask_type mask() noexcept
         {
-            return ( 1 << id<T>() );
+            return ( mask_type{0} | ... | ( mask_type{1} << id<Ts>() ) );
         }
     };
     
