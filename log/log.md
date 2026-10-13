@@ -5,6 +5,31 @@ Registro de progreso diario del desarrollo del ECS de arquetipos con job system 
 ----> Obsidian
 ---
 
+## 2026-10-14
+
+**Fase:** Fase1 - ECS basico
+
+**Tiempo invertido:** —
+
+### Qué he hecho hoy
+- Arreglada la definición fuera de clase de `addComponent` (faltaba separar la cabecera `template<>` de la clase y la del método, por eso la declaración era incompatible).
+- Añadidos `addComponents` y `deleteComponent`/`deleteComponents`, que expanden un parameter pack de tipos con fold expressions (`(f<CMPs>(...), ...)`) y usan `std::forward` para preservar la categoría de valor de cada componente.
+
+### Decisiones de diseño
+- Definir los métodos plantilla de `EntityManager` fuera de la clase con doble cabecera `template<typename CMPS, typename TAGS, std::size_t Capacity> template<typename CMP>`, manteniendo el patrón ya usado para `createEntity`/`addEntity`.
+
+### Problemas / bloqueos
+- Ninguno
+
+### Aprendizajes
+- Diferencia entre `std::move` y `std::forward` en forwarding references: `forward` reenvía la categoría de valor original (lvalue/rvalue) según el tipo deducido del pack, `move` la fuerza siempre a rvalue.
+- Un índice runtime no puede usarse para indexar un parameter pack de tipos: el tipo con el que se instancia una plantilla debe resolverse en compile-time.
+
+### Próximos pasos
+- Eliminar todos los componentes de una entidad al borrarla (`removeEntity`), iterando sobre `cmpinfo::list_size` mediante `std::index_sequence`/`std::make_index_sequence<N>` para convertir un índice compile-time en el tipo de componente correspondiente.
+
+---
+
 ## 2026-09-23
 
 **Fase:** Fase1 - ECS basico

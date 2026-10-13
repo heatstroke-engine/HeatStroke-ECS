@@ -29,6 +29,7 @@ using CMPs = MP::Typelist<CTransform, CPhysics, CRender>;
 using TAGs = MP::Typelist<TPlayer, TEnemy, TBullet >;
 
 using GameEngine = HeatStroke::EntityManager<CMPs, TAGs>;
+using Entity = HeatStroke::EntityManager<CMPs, TAGs>::Entity;
 
 void seetype(auto)
 {
@@ -39,11 +40,23 @@ int main() {
 
     GameEngine GE;
 
-    HeatStroke::ComponentStorage<CMPs,TAGs> CS{};
+    Entity& e = GE.createEntity();
+    GE.addComponents<CPhysics,CRender>(e, CPhysics{}, CRender{});
 
-    seetype(GameEngine::Entity::Key_Storage_t{});
+    auto key = e.getComponentKey<CPhysics>();
+    auto key2 = e.getComponentKey<CRender>();
 
+    std::cout << key.gen << " " << key.id << "\n";
+    std::cout << key2.gen << " " << key2.id << "\n";
 
+    GE.deleteComponents<CRender,CPhysics>(e);
+
+    GE.addComponents<CPhysics,CRender>(e, CPhysics{}, CRender{});
+
+    std::cout << key.gen << " " << key.id << "\n";
+    std::cout << key2.gen << " " << key2.id << "\n";
+
+    GE.removeEntity(1);
 
     return 0;
 }

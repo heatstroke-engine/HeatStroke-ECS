@@ -145,7 +145,7 @@ namespace MP
     template<typename... Ts>
     struct Typelist
     {
-        consteval static std::size_t size() noexcept
+        consteval static uint8_t size() noexcept
         {
             return sizeof...(Ts);
         }

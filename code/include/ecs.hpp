@@ -39,6 +39,30 @@ namespace HeatStroke
              */
             void removeEntity(std::size_t entityId);
 
+            /**
+             * Add the given component to the given Entity.
+             */
+            template<typename CMP>
+            CMP& addComponent(Entity& e, CMP&& cmp) noexcept;
+
+            /**
+             * Add the given components to the given Entity.
+             */
+            template<typename... CMPs>
+            void addComponents(Entity& e, CMPs&&... cmp) noexcept;
+
+            /**
+             * Deletes the given component of the given Entity.
+             */
+            template<typename CMP>
+            void deleteComponent(Entity& e) noexcept;
+
+            /**
+             * Deletes the given components of the given Entity.
+             */
+            template<typename... CMPs>
+            void deleteComponents(Entity& e) noexcept;
+
             /*
              * Entity struct will represent an entity in the ECS system with a unique ID and a mask of their components.
              */
@@ -87,30 +111,9 @@ namespace HeatStroke
 
                     inline static std::size_t ID_COUNTER {0};
 
-
-                
             };
 
-            template<typename CMP>
-            CMP& addComponent(Entity& e, CMP&& cmp) noexcept
-            {
-                Slotmap_t<CMP>& storage = components_.template getStorage<CMP>();
-                cmp_key<CMP> key;
-                
-                if(e.template hasComponent<CMP>())
-                {
-                    warning(); // Should not add a component that the Entity already have
-                    key = e.template getComponentKey<CMP>();
-                    return storage[key];
-                }
-                
-                // Add component to the slotmap and 
-                key = storage.push_back(cmp);
-                //Add key to the Entity
-                e.template addComponent<CMP>(key);
-
-                return storage[key];
-            }
+            
 
             EntityManager();
             // Deleted functions
@@ -123,13 +126,13 @@ namespace HeatStroke
         
 
     template<typename CMPS, typename TAGS, std::size_t Capacity>
-    EntityManager<CMPS, TAGS, Capacity>::Entity& EntityManager<CMPS, TAGS, Capacity>::createEntity()
+    inline EntityManager<CMPS, TAGS, Capacity>::Entity& EntityManager<CMPS, TAGS, Capacity>::createEntity()
     {
         return entities_.emplace_back();
     }
 
     template<typename CMPS, typename TAGS, std::size_t Capacity>
-    void EntityManager<CMPS, TAGS, Capacity>::addEntity(Entity& entity)
+    inline void EntityManager<CMPS, TAGS, Capacity>::addEntity(Entity& entity)
     {
         entities_.push_back(entity);
     }
@@ -141,7 +144,9 @@ namespace HeatStroke
         {
             if(entities_[i].getId() == entityId)
             {
-                // Here we must remove all entity components, but for now we will just remove the entity from the list.
+                // Remove Entity components
+                std::make_index_sequence<cmpinfo::list_size> f{};
+                
                 entities_[i] = entities_.back();
                 entities_.pop_back();
                 std::cout << "Entities size: " << entities_.size() << std::endl;
@@ -161,5 +166,52 @@ namespace HeatStroke
     {
         entities_.reserve(1000);
     }
-    
+
+
+    template<typename CMPS, typename TAGS, std::size_t Capacity>
+    template<typename... CMPs>
+    void EntityManager<CMPS, TAGS, Capacity>::addComponents(Entity& e, CMPs&&... cmp) noexcept
+    {
+        (addComponent<CMPs>(e, std::forward<CMPs>(cmp)), ...);
+    }
+
+    template<typename CMPS, typename TAGS, std::size_t Capacity>
+    template<typename CMP>
+    CMP& EntityManager<CMPS, TAGS, Capacity>::addComponent(Entity& e, CMP&& cmp) noexcept
+    {
+        Slotmap_t<CMP>& storage = components_.template getStorage<CMP>();
+        cmp_key<CMP> key;
+        
+        debugAssertion(!e.template hasComponent<CMP>());
+        
+        // Add component to the slotmap and 
+        key = storage.push_back(cmp);
+        //Add key to the Entity
+        e.template addComponent<CMP>(key);
+
+        return storage[key];
+    }
+
+    template<typename CMPS, typename TAGS, std::size_t Capacity>
+    template<typename CMP>
+    void EntityManager<CMPS, TAGS, Capacity>::deleteComponent(Entity& e) noexcept
+    {
+        Slotmap_t<CMP>& storage = components_.template getStorage<CMP>();
+        cmp_key<CMP> key;
+
+        debugAssertion(e.template hasComponent<CMP>());
+
+        // Remove CMP from the slotmap
+        storage.erase(key);
+
+        e.template removeComponent<CMP>();
+    }
+
+    template<typename CMPS, typename TAGS, std::size_t Capacity>
+    template<typename... CMPs>
+    void EntityManager<CMPS, TAGS, Capacity>::deleteComponents(Entity& e) noexcept
+    {
+        (deleteComponent<CMPs>(e), ...);
+    }
+
 } // namespace HeatStroke
