@@ -9,14 +9,21 @@ Registro de progreso diario del desarrollo del ECS de arquetipos con job system 
 
 **Fase:** Fase1 - ECS basico
 
-**Tiempo invertido:** —
+**Tiempo invertido:** 4h
 
 ### Qué he hecho hoy
 - Arreglada la definición fuera de clase de `addComponent` (faltaba separar la cabecera `template<>` de la clase y la del método, por eso la declaración era incompatible).
 - Añadidos `addComponents` y `deleteComponent`/`deleteComponents`, que expanden un parameter pack de tipos con fold expressions (`(f<CMPs>(...), ...)`) y usan `std::forward` para preservar la categoría de valor de cada componente.
+- Implementado `type_at<i, Ts...>` (y `type_at_t`) en `typetraits.hpp`, con `static_assert` de rango, y expuesto como `Typelist::at<i>` y `type_traits::at<i>`.
+- `removeEntity` ahora elimina todos los componentes de la entidad: `removeEntityimp` recorre `std::make_index_sequence<cmpinfo::list_size>` y, para cada índice, llama a `removeIfPresent<cmpinfo::at<I>>(e)` mediante una fold expression (sin lambda).
+- Corregido `removeComponent`: la clave se leía sin inicializar; ahora se obtiene con `getComponentKey<CMP>()`. `Entity::removeComponent` limpia el bit con `&= ~mask` en lugar de invertirlo con `^=`.
+- `addComponent` pasa a usar forwarding reference con `std::remove_cvref_t<CMP>` para el tipo real del componente, de modo que acepta lvalues y rvalues (copia o mueve en el `push_back` del slotmap). `addComponents` deduce los tipos sin `<CMPs>` explícito.
+- Documentado `typetraits.hpp` con comentarios estilo Doxygen.
 
 ### Decisiones de diseño
 - Definir los métodos plantilla de `EntityManager` fuera de la clase con doble cabecera `template<typename CMPS, typename TAGS, std::size_t Capacity> template<typename CMP>`, manteniendo el patrón ya usado para `createEntity`/`addEntity`.
+- Sustituir la lambda de `removeEntityimp` por un método plantilla `removeIfPresent<CMP>`, que deja el fold en una sola expresión y es más legible.
+- `addComponent` no se llama con el tipo explícito (`addComponent<T>(e, x)`): con el tipo fijado a mano, `CMP&&` deja de ser forwarding reference y no admite lvalues.
 
 ### Problemas / bloqueos
 - Ninguno
@@ -24,9 +31,12 @@ Registro de progreso diario del desarrollo del ECS de arquetipos con job system 
 ### Aprendizajes
 - Diferencia entre `std::move` y `std::forward` en forwarding references: `forward` reenvía la categoría de valor original (lvalue/rvalue) según el tipo deducido del pack, `move` la fuerza siempre a rvalue.
 - Un índice runtime no puede usarse para indexar un parameter pack de tipos: el tipo con el que se instancia una plantilla debe resolverse en compile-time.
+- Con `std::index_sequence<I...>` no hay un array de índices en runtime, sino un pack de constantes compile-time; cada `I` sirve para instanciar `at<I>`.
+- `T&&` solo es forwarding reference cuando `T` se deduce; con el tipo explícito es una referencia a rvalue y no enlaza con lvalues.
 
 ### Próximos pasos
-- Eliminar todos los componentes de una entidad al borrarla (`removeEntity`), iterando sobre `cmpinfo::list_size` mediante `std::index_sequence`/`std::make_index_sequence<N>` para convertir un índice compile-time en el tipo de componente correspondiente.
+- Crear `addTag`/`removeTag`.
+- Crear `getComponent<CMP>(e)` que devuelve una referencia al componente de dicha entidad.
 
 ---
 

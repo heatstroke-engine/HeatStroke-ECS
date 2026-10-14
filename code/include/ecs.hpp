@@ -2,6 +2,8 @@
 
 #include <vector>
 #include <iostream>
+#include <type_traits>
+#include <utility>
 #include <componentstorage.hpp>
 
 namespace HeatStroke
@@ -43,7 +45,7 @@ namespace HeatStroke
              * Add the given component to the given Entity.
              */
             template<typename CMP>
-            CMP& addComponent(Entity& e, CMP&& cmp) noexcept;
+            std::remove_cvref_t<CMP>& addComponent(Entity& e, CMP&& cmp) noexcept;
 
             /**
              * Add the given components to the given Entity.
@@ -55,13 +57,13 @@ namespace HeatStroke
              * Deletes the given component of the given Entity.
              */
             template<typename CMP>
-            void deleteComponent(Entity& e) noexcept;
+            void removeComponent(Entity& e) noexcept;
 
             /**
              * Deletes the given components of the given Entity.
              */
             template<typename... CMPs>
-            void deleteComponents(Entity& e) noexcept;
+            void removeComponents(Entity& e) noexcept;
 
             /*
              * Entity struct will represent an entity in the ECS system with a unique ID and a mask of their components.
@@ -92,7 +94,7 @@ namespace HeatStroke
                 template<typename CMP>
                 void removeComponent()
                 {
-                    cmp_mask ^= cmpinfo::template mask<CMP>();
+                    cmp_mask &= ~cmpinfo::template mask<CMP>();
                 }
 
                 template<typename CMP>
@@ -120,6 +122,23 @@ namespace HeatStroke
             EntityManager(const EntityManager& rhs) = delete;
             EntityManager& operator=(const EntityManager& rhs) = delete;
             private:
+                template<typename CMP>
+                void removeIfPresent(Entity& e) noexcept
+                {
+                    if (e.template hasComponent<CMP>()) 
+                    {
+                            removeComponent<CMP>(e);
+                    }
+                }
+
+
+                template<std::size_t... I>
+                void removeEntityimp(Entity& e, std::index_sequence<I...>)noexcept
+                {
+                   (removeIfPresent<typename cmpinfo::template at<I> >(e), ...);
+                }
+
+
                 std::vector<Entity> entities_{};
                 cmp_storage_t components_{};
     };
@@ -143,14 +162,17 @@ namespace HeatStroke
         for(std::size_t i = 0; i < entities_.size(); ++i)
         {
             if(entities_[i].getId() == entityId)
-            {
+            {   
+
                 // Remove Entity components
-                std::make_index_sequence<cmpinfo::list_size> f{};
-                
-                entities_[i] = entities_.back();
+                removeEntityimp(entities_[i], std::make_index_sequence<cmpinfo::list_size>{});
+                // Remove Entity
+                if(entityId != entities_.back().getId())
+                {
+                    entities_[i] = entities_.back();
+                }
                 entities_.pop_back();
-                std::cout << "Entities size: " << entities_.size() << std::endl;
-                return;
+                break;
             }
         }
     }
@@ -172,34 +194,36 @@ namespace HeatStroke
     template<typename... CMPs>
     void EntityManager<CMPS, TAGS, Capacity>::addComponents(Entity& e, CMPs&&... cmp) noexcept
     {
-        (addComponent<CMPs>(e, std::forward<CMPs>(cmp)), ...);
+        (addComponent(e, std::forward<CMPs>(cmp)), ...);
     }
 
     template<typename CMPS, typename TAGS, std::size_t Capacity>
     template<typename CMP>
-    CMP& EntityManager<CMPS, TAGS, Capacity>::addComponent(Entity& e, CMP&& cmp) noexcept
+    std::remove_cvref_t<CMP>& EntityManager<CMPS, TAGS, Capacity>::addComponent(Entity& e, CMP&& cmp) noexcept
     {
-        Slotmap_t<CMP>& storage = components_.template getStorage<CMP>();
-        cmp_key<CMP> key;
-        
-        debugAssertion(!e.template hasComponent<CMP>());
-        
-        // Add component to the slotmap and 
-        key = storage.push_back(cmp);
+        using T = std::remove_cvref_t<CMP>;
+
+        Slotmap_t<T>& storage = components_.template getStorage<T>();
+        cmp_key<T> key;
+
+        debugAssertion(!e.template hasComponent<T>());
+
+        // Add component to the slotmap (copied or moved depending on the value category)
+        key = storage.push_back(std::forward<CMP>(cmp));
         //Add key to the Entity
-        e.template addComponent<CMP>(key);
+        e.template addComponent<T>(key);
 
         return storage[key];
     }
 
     template<typename CMPS, typename TAGS, std::size_t Capacity>
     template<typename CMP>
-    void EntityManager<CMPS, TAGS, Capacity>::deleteComponent(Entity& e) noexcept
+    void EntityManager<CMPS, TAGS, Capacity>::removeComponent(Entity& e) noexcept
     {
-        Slotmap_t<CMP>& storage = components_.template getStorage<CMP>();
-        cmp_key<CMP> key;
-
         debugAssertion(e.template hasComponent<CMP>());
+
+        Slotmap_t<CMP>& storage = components_.template getStorage<CMP>();
+        cmp_key<CMP> key = e.template getComponentKey<CMP>();
 
         // Remove CMP from the slotmap
         storage.erase(key);
@@ -209,9 +233,9 @@ namespace HeatStroke
 
     template<typename CMPS, typename TAGS, std::size_t Capacity>
     template<typename... CMPs>
-    void EntityManager<CMPS, TAGS, Capacity>::deleteComponents(Entity& e) noexcept
+    void EntityManager<CMPS, TAGS, Capacity>::removeComponents(Entity& e) noexcept
     {
-        (deleteComponent<CMPs>(e), ...);
+        (removeComponent<CMPs>(e), ...);
     }
 
 } // namespace HeatStroke

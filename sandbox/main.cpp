@@ -38,23 +38,20 @@ void seetype(auto)
 
 int main() {
 
+    compileTimeAssertion(std::is_same_v<CMPs::at<2>,CRender >);
+
     GameEngine GE;
 
     Entity& e = GE.createEntity();
-    GE.addComponents<CPhysics,CRender>(e, CPhysics{}, CRender{});
+    CPhysics p{};
+    CRender r{};
+    GE.addComponents(e, p,r);
+    
+    GE.removeComponents<CPhysics,CRender>(e);
+    GE.addComponents(e, p,r);
+    
+    
 
-    auto key = e.getComponentKey<CPhysics>();
-    auto key2 = e.getComponentKey<CRender>();
-
-    std::cout << key.gen << " " << key.id << "\n";
-    std::cout << key2.gen << " " << key2.id << "\n";
-
-    GE.deleteComponents<CRender,CPhysics>(e);
-
-    GE.addComponents<CPhysics,CRender>(e, CPhysics{}, CRender{});
-
-    std::cout << key.gen << " " << key.id << "\n";
-    std::cout << key2.gen << " " << key2.id << "\n";
 
     GE.removeEntity(1);
 
