@@ -5,6 +5,35 @@ Registro de progreso diario del desarrollo del ECS de arquetipos con job system 
 ----> Obsidian
 ---
 
+## 2026-10-16
+
+**Fase:** Fase1 - ECS basico
+
+**Tiempo invertido:** 2h
+
+### Qué he hecho hoy
+- Añadidos `addTag`/`removeTag` y `addTags`/`removeTags` en `EntityManager`, con su versión privada en `Entity` que actualiza la máscara de tags (`|=` para añadir, `&= ~mask` para quitar).
+- `Entity` declara `friend class EntityManager` y deja privados sus `addComponent`/`removeComponent`/`addTag`/`removeTag`: solo el manager puede modificar las máscaras, así no se desincronizan del slotmap.
+- Añadido `getComponent<CMP>(e)`, que devuelve una referencia al componente de la entidad, con una sobrecarga `const` del manager que devuelve `const CMP&`. Ambas reciben `const Entity&`.
+- Añadidas las sobrecargas `const` de `ComponentStorage::getStorage<CMP>()` y `SlotMap::operator[]` para soportar el `getComponent` const.
+- Corregido `addTags`/`removeTags`: el fold `(debugAssertion(...), ...)` no compilaba en release, porque la macro expandía a `static_cast<void>(0)` sin el pack. Ahora delegan en `addTag<TAGs>(e)`/`removeTag<TAGs>(e)`, que ya llevan el assert.
+
+### Decisiones de diseño
+- `getComponent` recibe la entidad como `const` en ambas sobrecargas: la entidad solo guarda la máscara y la clave, y el componente vive en el storage del manager. La constness del componente devuelto la decide el manager, no la entidad.
+- Las versiones con pack (`addTags`/`removeTags`) delegan en las individuales para no duplicar el assert.
+
+### Problemas / bloqueos
+- Ninguno
+
+### Aprendizajes
+- No meter un parameter pack dentro de una macro que puede desaparecer en release: si la expansión deja de mencionar el pack, la fold expression no compila.
+- Para devolver `const T&` desde un método `const`, toda la cadena de acceso (storage, slotmap) necesita su sobrecarga `const`.
+
+### Próximos pasos
+- Realizar el precacheado para los sistemas: que el `foreach` recorra un array precacheado con las entidades que cumplen la firma del sistema.
+
+---
+
 ## 2026-10-14
 
 **Fase:** Fase1 - ECS basico

@@ -52,6 +52,13 @@ namespace HeatStroke
                 return data_[key.id];
             }
 
+            [[nodiscard]] inline constexpr const Data_t& operator[](const key_type key) const noexcept
+            {
+                runTimeAssertion(is_valid(key));
+
+                return data_[key.id];
+            }
+
             constexpr bool erase(const key_type key) noexcept;
 
             [[nodiscard]] constexpr iterator begin() noexcept

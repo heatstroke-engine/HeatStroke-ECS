@@ -50,6 +50,12 @@ namespace HeatStroke
                 return std::get<getId<CMP>()>(cmps_);
             }
 
+            template<typename CMP>
+            constexpr const HeatStroke::SlotMap<CMP,Capacity>& getStorage() const noexcept
+            {
+                return std::get<getId<CMP>()>(cmps_);
+            }
+
             // Deleted functions
             ComponentStorage(const ComponentStorage& rhs) = delete;
             ComponentStorage& operator=(const ComponentStorage& rhs) = delete;

@@ -12,7 +12,8 @@ struct CTransform
 };
 struct CPhysics
 {
-
+    std::uint32_t x {0UL};
+    std::uint32_t y {0UL};
 };
 struct CRender
 {
@@ -43,15 +44,17 @@ int main() {
     GameEngine GE;
 
     Entity& e = GE.createEntity();
-    CPhysics p{};
+    CPhysics p{33,57};
     CRender r{};
     GE.addComponents(e, p,r);
     
     GE.removeComponents<CPhysics,CRender>(e);
     GE.addComponents(e, p,r);
-    
-    
+    GE.addTag<TPlayer>(e);
+        
+    const CPhysics& ph = GE.getComponent<CPhysics>(e);
 
+    
 
     GE.removeEntity(1);
 
