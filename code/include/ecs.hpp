@@ -237,7 +237,7 @@ namespace HeatStroke
         Slotmap_t<T>& storage = components_.template getStorage<T>();
         cmp_key<T> key;
 
-        debugAssertion(!e.template hasComponent<T>());
+        debugAssertion(!e.template hasComponent<T>(), "Trying to add a component to an Entity that already have it.");
 
         // Add component to the slotmap (copied or moved depending on the value category)
         key = storage.push_back(std::forward<CMP>(cmp));
@@ -251,7 +251,7 @@ namespace HeatStroke
     template<typename CMP>
     void EntityManager<CMPS, TAGS, Capacity>::removeComponent(Entity& e) noexcept
     {
-        debugAssertion(e.template hasComponent<CMP>());
+        debugAssertion(e.template hasComponent<CMP>(), "Trying to remove a component from an Entity that doesn`t have it.");
 
         Slotmap_t<CMP>& storage = components_.template getStorage<CMP>();
         cmp_key<CMP> key = e.template getComponentKey<CMP>();
@@ -273,7 +273,7 @@ namespace HeatStroke
     template<typename TAG>
     void EntityManager<CMPS, TAGS, Capacity>::addTag(Entity& e) noexcept
     {
-        debugAssertion(!e.template hasTag<TAG>());
+        debugAssertion(!e.template hasTag<TAG>(), "Trying to add a tag from an Entity that already have it.");
         e.template addTag<TAG>();
     }
 
@@ -288,7 +288,7 @@ namespace HeatStroke
     template<typename TAG>
     void EntityManager<CMPS, TAGS, Capacity>::removeTag(Entity& e) noexcept
     {
-        debugAssertion(e.template hasTag<TAG>());
+        debugAssertion(e.template hasTag<TAG>(), "Trying to remove a tag from an Entity that doesn`t have it.");
 
         e.template removeTag<TAG>();
     }
@@ -304,7 +304,7 @@ namespace HeatStroke
     template<typename CMP>
     CMP& EntityManager<CMPS, TAGS, Capacity>::getComponent(const Entity& e) noexcept
     {
-        debugAssertion(e.template hasComponent<CMP>());
+        debugAssertion(e.template hasComponent<CMP>(), "Trying to get a component from an Entity that doesn`t have it.");
 
         cmp_key<CMP> key = e.template getComponentKey<CMP>();
         Slotmap_t<CMP>& storage = components_.template getStorage<CMP>();
@@ -316,7 +316,7 @@ namespace HeatStroke
     template<typename CMP>
     const CMP& EntityManager<CMPS, TAGS, Capacity>::getComponent(const Entity& e) const noexcept
     {
-        debugAssertion(e.template hasComponent<CMP>());
+        debugAssertion(e.template hasComponent<CMP>(), "Trying to get a component from an Entity that doesn`t have it.");
 
         cmp_key<CMP> key = e.template getComponentKey<CMP>();
         const Slotmap_t<CMP>& storage = components_.template getStorage<CMP>();

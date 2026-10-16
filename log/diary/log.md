@@ -5,6 +5,41 @@ Registro de progreso diario del desarrollo del ECS de arquetipos con job system 
 ----> Obsidian
 ---
 
+## 2026-10-17
+
+**Fase:** Fase1 - ECS basico
+
+**Tiempo invertido:** 2h
+
+### Qué he hecho hoy
+- Creado un sistema de log (`log.hpp`/`log.cpp`): `Log::printTrace` imprime el mensaje junto al fichero, la línea, la columna y la función de la llamada con `std::source_location`, y `Log::printNoTrace` imprime solo el mensaje.
+- `Log::initialize()` redirige `std::clog` a un fichero por ejecución, `log/execution/<dd-mm-aaaa-HHh-MMm-SSs>_log.txt`. Crea la carpeta si no existe y, si no puede abrir el fichero, avisa por `std::cerr` y deja `clog` en la terminal. Al cerrar el programa, el destructor restaura el buffer original de `clog`.
+- `runTimeAssertion`/`debugAssertion` aceptan un mensaje opcional y muestran la expresión que ha fallado. `warning()` también acepta un mensaje opcional. Ambos usan `std::source_location` como parámetro por defecto, así que la traza apunta a la línea donde se llama a la macro y no a `warning.cpp`.
+- Corregidas llamadas a los asserts: faltaba una coma en `slotmap.hpp` y un paréntesis mal cerrado en `ecs.hpp` hacía que el mensaje se descartara sin error.
+- Añadido `#include <cstdint>` en `slotmap.hpp`: usaba `std::uint32_t` y solo compilaba porque le llegaba indirectamente desde otra cabecera.
+- `log/execution` añadido al `.gitignore`.
+
+### Decisiones de diseño
+- El log escribe en `std::clog` y no en `std::cout`, para no mezclarse con la salida normal del programa y poder redirigirlo de forma independiente.
+- `Log` es un singleton creado con un `static` local dentro de `initialize()`. Como se construye después que el `ofstream` global, se destruye antes que él y restaura `clog` antes de que se cierre el fichero.
+- Un fichero de log por ejecución, con fecha y hora en el nombre, en lugar de sobrescribir siempre el mismo.
+
+### Problemas / bloqueos
+- Ninguno
+
+### Aprendizajes
+- Diferencia entre `std::cout`, `std::clog` y `std::cerr`: `cout` va a stdout y `clog`/`cerr` a stderr. `cout` y `clog` tienen buffer y `cerr` no. Dos streams con buffers distintos pueden mostrar sus mensajes desordenados.
+- Se puede redirigir un stream cambiando su buffer con `rdbuf()`. El `ofstream` tiene que vivir más que la redirección, o el stream acaba usando un buffer destruido.
+- Un argumento por defecto `std::source_location::current()` se evalúa en el sitio de la llamada, y eso es lo que permite que la traza apunte a la línea que llama al assert.
+- Una variable `static` definida en una cabecera crea una copia en cada `.cpp` que la incluye. Los detalles internos van en un namespace anónimo dentro del `.cpp`.
+- Una función definida en una cabecera tiene que ser `inline` para no violar la ODR (One Definition Rule).
+- `ofstream` no crea directorios: si la carpeta no existe, `open` falla sin avisar.
+
+### Próximos pasos
+- Realizar el precacheado para los sistemas: que el `foreach` recorra un array precacheado con las entidades que cumplen la firma del sistema.
+
+---
+
 ## 2026-10-16
 
 **Fase:** Fase1 - ECS basico

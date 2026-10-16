@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include <ecs.hpp>
-
+#include <log.hpp>
 
 /*
     Dummy CMPs
@@ -39,6 +39,8 @@ void seetype(auto)
 
 int main() {
 
+    Log::initialize();
+
     compileTimeAssertion(std::is_same_v<CMPs::at<2>,CRender >);
 
     GameEngine GE;
@@ -51,9 +53,6 @@ int main() {
     GE.removeComponents<CPhysics,CRender>(e);
     GE.addComponents(e, p,r);
     GE.addTag<TPlayer>(e);
-        
-    const CPhysics& ph = GE.getComponent<CPhysics>(e);
-
     
 
     GE.removeEntity(1);

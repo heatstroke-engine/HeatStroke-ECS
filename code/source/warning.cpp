@@ -1,19 +1,22 @@
 #include <warning.hpp>
 #include <cstdlib>
 #include <iostream>
+#include <log.hpp>
 
 namespace Bsp
 {
-    void warning_imp(const char* file, const char* function, int line)
+    void warning_imp(std::string_view message, std::source_location location)
     {
-        std::cout << "[WARNING] " << file << ":" << line << " (" << function << ")" << "\n";
+        std::clog << "[WARNING] ";
+        Log::printTrace(message, location);
     }
 
-    void runTimeAssertion_imp(bool b, const char* expr, const char* file, const char* function, int line)
+    void runTimeAssertion_imp(bool b, const char* expr, std::string_view message, std::source_location location)
     {
         if(!b)
         {
-            std::cout << "[ASSERTION FAILED] (" << expr << ") " << file << ":" << line << " (" << function << ")" << "\n";
+            std::clog << "[ASSERTION FAILED] (" << expr << ") ";
+            Log::printTrace(message, location);
             std::exit(1);
         }
     }

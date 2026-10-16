@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
 #include <warning.hpp>
 
 namespace HeatStroke
@@ -47,14 +48,14 @@ namespace HeatStroke
 
             [[nodiscard]] inline constexpr Data_t& operator[](const key_type key) noexcept
             {
-                runTimeAssertion(is_valid(key));
+                runTimeAssertion(is_valid(key), "Invalid key passed.");
 
                 return data_[key.id];
             }
 
             [[nodiscard]] inline constexpr const Data_t& operator[](const key_type key) const noexcept
             {
-                runTimeAssertion(is_valid(key));
+                runTimeAssertion(is_valid(key), "Invalid key passed.");
 
                 return data_[key.id];
             }
@@ -126,7 +127,7 @@ namespace HeatStroke
     constexpr SlotMap<Data_t, Capacity>::allocate()
     {
 
-        runTimeAssertion(size_ < Capacity);
+        runTimeAssertion(size_ < Capacity, "Slotmap run out of space.");
         
         // Reserve
         index_type slotId = freelist_;
@@ -167,7 +168,7 @@ namespace HeatStroke
     template<typename Data_t, std::size_t Capacity>
     constexpr void SlotMap<Data_t,Capacity>::free(const key_type key) noexcept
     {
-        runTimeAssertion(is_valid(key)); // This cant happen.
+        runTimeAssertion(is_valid(key), "Call it with an invalid key"); // This cant happen.
 
         key_type& slot = indices_[key.id];
         
