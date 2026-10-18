@@ -5,6 +5,43 @@ Registro de progreso diario del desarrollo del ECS de arquetipos con job system 
 ----> Obsidian
 ---
 
+## 2026-10-19
+
+**Fase:** Fase1 - ECS basico
+
+**Tiempo invertido:** 2h
+
+### Qué he hecho hoy
+- El modo debug lo decide CMake: `target_compile_definitions(hs_utils PUBLIC $<$<CONFIG:Debug>:HS_DEBUG_MODE>)`. Con el preset debug están activos los asserts, los warnings y el log; con release desaparecen. Ya no hay que comentar un `#define` a mano.
+- El log pasa a usarse con macros (`logInit()`, `logPrint(msg)`, `logTrace(msg)`), que en release se expanden a nada. Las implementaciones de `Log::print` y `Log::printTrace` pasan al `.cpp`.
+- Integrado Google Benchmark (v1.10.0) con `FetchContent`: CMake lo descarga y lo compila con el mismo compilador que el ECS. Se controla con la opción `HSECS_BUILD_BENCHMARKS` y genera el ejecutable `hsecs_benchmarks`.
+- Primer benchmark, `BM_CREATEENTITES`: crear N entidades (1K, 10K y 100K) en un manager vacío. La construcción y destrucción del manager quedan fuera de la medida (`PauseTiming`/`ResumeTiming` con un `std::optional<GameEngine>` y `emplace()`). Reporta el throughput con `SetItemsProcessed`.
+- Script `build_and_run_benchmarks.ps1` y tarea de VS Code: compila en release, ejecuta los benchmarks con 10 repeticiones (media, mediana, desviación y cv) y guarda los resultados en `benchmarks/results/<fecha>_benchmark.json`.
+
+### Decisiones de diseño
+- Los benchmarks se miden siempre en release: en debug los asserts y la falta de optimización falsean los resultados.
+- Google Benchmark se integra con `FetchContent` en lugar de instalarlo aparte: versión fijada en el repo, mismo compilador y nadie necesita instalar nada para compilar el proyecto.
+- No se mide la creación del manager, porque no ocurre durante el `update` del juego.
+- Los resultados se guardan en JSON, que además de los tiempos incluye la máquina (CPU, cachés) y la fecha, para documentarlos en la memoria.
+
+### Problemas / bloqueos
+- Lío con git: apliqué un stash sobre una versión desactualizada de `sw/ecs/basic/1.0` y el pull generó conflictos. Se resolvió abortando el merge, dejando la rama igual que `origin` y aplicando el stash en una rama nueva (`feature/10_benchmarks`).
+- CMake en Windows usa por defecto el generador de Visual Studio (NMake); hay que indicar Ninja y el g++ de MSYS2.
+- Puse los argumentos del ejecutable de benchmarks (`--benchmark_out`...) como flags del compilador; además `\r` dentro de una ruta en CMake se interpreta como retorno de carro y rompía `build.ninja`.
+
+### Aprendizajes
+- Funcionamiento de Google Benchmark: el bucle `for (auto _ : state)` lo controla la librería, los parámetros con `->Arg`/`->Range` y `state.range(0)`, `SetItemsProcessed` para el throughput y `DoNotOptimize` para que el compilador no elimine el trabajo medido.
+- Lo que hay al final del cuerpo del bucle (como el destructor de un objeto local) también se mide.
+- `#include "..."` busca primero en la carpeta del fichero; `#include <...>` solo en las rutas de include.
+- Una macro que se expande a nada garantiza que sus argumentos no se evalúan; una función `inline` vacía no.
+- Primeros resultados: crear entidades baja de ~360M/s con 1K a ~53M/s con 100K, por los `resize` del `SlotMap` (capacidad inicial 1000) y porque los datos ya no caben en caché.
+
+### Próximos pasos
+- Añadir el resto de tests de rendimiento.
+- Exportar los resultados estables a LaTeX para convertirlos en PDF.
+
+---
+
 ## 2026-10-18
 
 **Fase:** Fase1 - ECS basico

@@ -1,6 +1,6 @@
 param(
     [ValidateSet("debug", "release")]
-    [string]$Preset = "debug"
+    [string]$Preset = "release"
 )
 
 $ErrorActionPreference = "Stop"

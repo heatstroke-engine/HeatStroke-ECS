@@ -39,6 +39,23 @@
                 "panel": "shared",
                 "clear": true
             }
+        },
+        {
+            "label": "Build + Run Benchmarks (release)",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy", "Bypass",
+                "-File", "${workspaceFolder}/scripts/build_and_run_benchmarks.ps1"
+            ],
+            "group": "build",
+            "problemMatcher": ["$msCompile"],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            }
         }
     ]
 }
