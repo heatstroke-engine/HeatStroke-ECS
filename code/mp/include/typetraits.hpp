@@ -235,6 +235,17 @@ namespace MP
         }
 
         /**
+         * @brief Checks whether OTS is include in the list.
+         * @tparam OTs Types.
+         * @return true if OTs are include in the list.
+         */
+        template<typename... OTs>
+        consteval static bool includes(Typelist<OTs...>) noexcept
+        {
+            return (true && ... && contains<OTs>());
+        }
+
+        /**
          * @brief Position of T in the list.
          * @tparam T Type to look for.
          * @return Zero-based position of T.
@@ -301,6 +312,16 @@ namespace MP
         consteval static mask_type mask() noexcept
         {
             return ( mask_type{0} | ... | ( mask_type{1} << id<Ts>() ) );
+        }
+
+        /**
+         * @brief Bit mask with the bit of each type in Ts set.
+         * @tparam Ts Types whose bits are set. All must be part of the list.
+         */
+        template<typename... Ts>
+        consteval static mask_type mask(Typelist<Ts...>) noexcept
+        {
+            return (mask<Ts...>()) ;
         }
 
         /**

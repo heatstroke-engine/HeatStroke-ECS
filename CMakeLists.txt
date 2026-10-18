@@ -32,36 +32,47 @@ endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)  # genera compile_commands.json (autocompletado en editores)
 
 # =========================================================================
-# 3) LA LIBRERÍA DEL ECS
-#    add_library(nombre TIPO archivos.cpp...) crea el target.
-#    Para añadir un .cpp nuevo, solo lo listas aquí abajo.
+# 3) MÓDULOS DE LA LIBRERÍA
+#    Un target por módulo. Cada uno solo ve los #include de los módulos
+#    que enlaza, así CMake impone las dependencias: ecs -> mp -> utils.
+#    Para añadir un .cpp nuevo, lo listas en el add_library de su módulo.
 # =========================================================================
-add_library(heatstroke_ecs STATIC
-    code/source/warning.cpp
+
+# --- utils: log y asserts. Es el módulo base, no depende de ningún otro.
+add_library(hs_utils STATIC
+    code/utils/source/warning.cpp
+    code/utils/source/log.cpp
 )
-
-# Carpeta donde este target (y quien lo use) busca sus #include
-target_include_directories(heatstroke_ecs PUBLIC code/include)
-
-# Le aplicamos las flags que definimos en el punto 2
-target_compile_options(heatstroke_ecs PRIVATE ${CXX_FLAGS_COMUNES})
+target_include_directories(hs_utils PUBLIC code/utils/include)
+target_compile_options(hs_utils PRIVATE ${CXX_FLAGS_COMUNES})
 
 if(MINGW)
     # Enlaza el runtime de C++ de forma estática: el .exe resultante no
     # depende de libstdc++-6.dll / libgcc_s_*.dll al ejecutarse.
-    target_link_options(heatstroke_ecs PUBLIC -static-libgcc -static-libstdc++ -static)
+    # Al ser PUBLIC, lo hereda todo lo que enlace (directa o indirectamente) hs_utils.
+    target_link_options(hs_utils PUBLIC -static-libgcc -static-libstdc++ -static)
 endif()
+
+# --- mp: metaprogramación. Solo cabeceras (INTERFACE: no compila nada).
+add_library(hs_mp INTERFACE)
+target_include_directories(hs_mp INTERFACE code/mp/include)
+target_link_libraries(hs_mp INTERFACE hs_utils)
+
+# --- ecs: el ECS en sí. Solo cabeceras.
+add_library(hs_ecs INTERFACE)
+target_include_directories(hs_ecs INTERFACE code/ecs/include)
+target_link_libraries(hs_ecs INTERFACE hs_mp hs_utils)
 
 # =========================================================================
 # 4) EJECUTABLE DE PRUEBA (sandbox)
 #    add_executable funciona igual que add_library pero produce un .exe.
-#    target_link_libraries lo conecta con heatstroke_ecs: automáticamente
-#    hereda su include dir y sus flags de link, porque los declaramos PUBLIC.
+#    target_link_libraries lo conecta con hs_ecs: automáticamente hereda
+#    los include dirs y las flags de link de hs_ecs, hs_mp y hs_utils.
 # =========================================================================
 option(HSECS_BUILD_SANDBOX "Compilar el ejecutable de pruebas sandbox" ON)
 
 if(HSECS_BUILD_SANDBOX)
     add_executable(hsecs_sandbox sandbox/main.cpp)
-    target_link_libraries(hsecs_sandbox PRIVATE heatstroke_ecs)
+    target_link_libraries(hsecs_sandbox PRIVATE hs_ecs)
     target_compile_options(hsecs_sandbox PRIVATE ${CXX_FLAGS_COMUNES})
 endif()

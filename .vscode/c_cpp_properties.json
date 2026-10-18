@@ -4,7 +4,9 @@
             "name": "HeatStrokeECS",
             "compileCommands": "${workspaceFolder}/build/debug/compile_commands.json",
             "includePath": [
-                "${workspaceFolder}/code/include"
+                "${workspaceFolder}/code/ecs/include",
+                "${workspaceFolder}/code/utils/include",
+                "${workspaceFolder}/code/mp/include"
             ],
             "cppStandard": "c++23"
         }
