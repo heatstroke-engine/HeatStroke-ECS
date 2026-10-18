@@ -3,6 +3,8 @@
 #include <iostream>
 #include <log.hpp>
 
+using namespace HeatStroke;
+
 namespace Bsp
 {
     void warning_imp(std::string_view message, std::source_location location)

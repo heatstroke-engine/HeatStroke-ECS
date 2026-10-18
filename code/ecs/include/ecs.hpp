@@ -5,6 +5,9 @@
 #include <type_traits>
 #include <utility>
 #include <componentstorage.hpp>
+#include <log.hpp>
+#include <format>
+#include <optional>
 
 namespace HeatStroke
 {
@@ -30,8 +33,7 @@ namespace HeatStroke
             {
                 friend class EntityManager;
 
-                using key_to_typlist = MP::for_all_insert_template_t<cmp_key, CMPS>;
-                using Key_Storage_t = MP::replace_t<std::tuple, key_to_typlist>;
+                using Key_Storage_t = std::array<Key, cmpinfo::size()>;
                 
                 Entity() = default;
                 
@@ -52,7 +54,17 @@ namespace HeatStroke
                 template<typename CMP>
                 cmp_key<CMP> getComponentKey() const
                 {
-                    return std::get<cmpinfo::template id<CMP>()>(keys);
+                    return keys[cmpinfo::template id<CMP>()];
+                }
+
+                inline cmpinfo::mask_type getCMPmask() const noexcept
+                {
+                    return cmp_mask;
+                }
+
+                inline taginfo::mask_type getTAGmask() const noexcept
+                {
+                    return tag_mask;
                 }
                 
                 private:
@@ -61,7 +73,7 @@ namespace HeatStroke
                     {
                         cmp_mask |= cmpinfo::template mask<CMP>();
 
-                        std::get<cmp_key<CMP> >(keys) = key;
+                        keys[cmpinfo::template id<CMP>()] = key;
                     }
 
                     template<typename CMP>
@@ -89,6 +101,14 @@ namespace HeatStroke
 
                     inline static std::size_t ID_COUNTER {0};
 
+            };
+
+            struct SystemCache
+            {
+                cmpinfo::mask_type cmp_mask;
+                taginfo::mask_type tag_mask;
+
+                std::vector<std::size_t> ids{};
             };
 
             /*
@@ -148,6 +168,15 @@ namespace HeatStroke
             template<typename CMP>
             const CMP& getComponent(const Entity& e) const noexcept;
 
+            Entity* getEntityById(const std::size_t id) noexcept;
+
+            template<typename SYS>
+            void registerSystem() noexcept;
+
+            template<typename SYS>
+            void foreach(auto&&) noexcept;
+
+
             EntityManager();
             // Deleted functions
             EntityManager(const EntityManager& rhs) = delete;
@@ -172,6 +201,10 @@ namespace HeatStroke
 
                 std::vector<Entity> entities_{};
                 cmp_storage_t components_{};
+
+                using SystemCacheContainer_t = std::vector<SystemCache>;
+
+                SystemCacheContainer_t caches_{};
     };
         
 
@@ -322,6 +355,88 @@ namespace HeatStroke
         const Slotmap_t<CMP>& storage = components_.template getStorage<CMP>();
 
         return storage[key];
+    }
+
+    template<typename CMPS, typename TAGS, std::size_t Capacity>
+    typename EntityManager<CMPS, TAGS, Capacity>::Entity* EntityManager<CMPS, TAGS, Capacity>::getEntityById(const std::size_t id) noexcept
+    {
+        for(Entity& e : entities_)
+        {
+            if(e.getId() == id)
+            {
+                return &e;
+            }
+        }
+        return nullptr;
+    }
+
+    template<typename CMPS, typename TAGS, std::size_t Capacity>
+    template<typename SYS>
+    void EntityManager<CMPS, TAGS, Capacity>::registerSystem() noexcept
+    {
+        using SystemCMPs = typename SYS::SCMPs;
+        using SystemTAGs = typename SYS::STAGs;
+
+        compileTimeAssertion(CMPS::template includes(SystemCMPs{}) , "System signature contains a nonpresent CMP type");
+        compileTimeAssertion(TAGS::template includes(SystemTAGs{}), "System signature contains a nonpresent TAG type");
+        // Compute system masks
+        constexpr typename cmpinfo::mask_type cmp_mask0 = cmpinfo::template mask(SystemCMPs{});
+        constexpr typename taginfo::mask_type tag_mask0 = taginfo::template mask(SystemTAGs{});
+
+        Log::print(std::format("CMP mask {:#b}", cmp_mask0));
+        Log::print(std::format("TAG mask {:#b}", tag_mask0));
+
+
+        // Checks is there is a chache that already mach the signature
+        bool finded = false;
+        std::size_t cache_index = 0;
+
+        for(std::size_t i{}; !finded && i < caches_.size(); ++i)
+        {
+            const SystemCache& cache = caches_[i];
+
+            const bool mached_cmp_mask = (cache.cmp_mask  == cmp_mask0);
+            const bool mached_tag_mask = (cache.tag_mask  == tag_mask0);
+            if(mached_cmp_mask && mached_tag_mask )
+            {
+                cache_index = i;
+                finded = true;
+            }
+        }
+
+        if(!finded)
+        {
+            // Add the cache to cache_
+            SystemCache& cache = caches_.emplace_back();
+            cache_index = caches_.size() - 1;
+
+            cache.cmp_mask = cmp_mask0;
+            cache.tag_mask = tag_mask0;
+
+            for(const Entity& e : entities_)
+            {
+                const bool contains_cmps = ((e.getCMPmask() & cache.cmp_mask) == cache.cmp_mask);
+                const bool contains_tags = ((e.getTAGmask() & cache.tag_mask) == cache.tag_mask);
+                if(contains_cmps && contains_tags)
+                {
+                    cache.ids.push_back(e.getId());
+                    Log::print(("Entity with id: " + std::to_string(e.getId()) + " added to cache."));
+                }
+            }
+        }
+        // Update the system index
+        SYS::cache_index = cache_index;
+    }
+
+    template<typename CMPS, typename TAGS, std::size_t Capacity>
+    template<typename SYS>
+    void EntityManager<CMPS, TAGS, Capacity>::foreach(auto&& func) noexcept
+    {
+        debugAssertion(SYS::cache_index < caches_.size(), "Index of system is out of bounds");
+
+        const SystemCache& precached = caches_[SYS::cache_index];
+
+        
     }
 
 } // namespace HeatStroke

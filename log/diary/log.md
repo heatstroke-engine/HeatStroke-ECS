@@ -5,6 +5,50 @@ Registro de progreso diario del desarrollo del ECS de arquetipos con job system 
 ----> Obsidian
 ---
 
+## 2026-10-18
+
+**Fase:** Fase1 - ECS basico
+
+**Tiempo invertido:** 4h
+
+### Qué he hecho hoy
+- Reorganizado el proyecto en módulos: `code/utils` (log y asserts), `code/mp` (metaprogramación) y `code/ecs` (el ECS). En CMake hay un target por módulo (`hs_utils` estático, `hs_mp` y `hs_ecs` de solo cabeceras), enlazados como `ecs → mp → utils`, de modo que cada módulo solo ve los includes de los módulos de los que depende.
+- Añadido `registerSystem<SYS>()`: los sistemas declaran su firma con `using SCMPs = MP::Typelist<...>` y `using STAGs = MP::Typelist<...>`, y el manager calcula las máscaras en compilación. Con `compileTimeAssertion` se comprueba que todos los componentes y tags de la firma existen en el manager (`Typelist::includes`).
+- Cachés de sistema (`SystemCache`): guardan la firma y la lista de entidades que la cumplen. Si ya existe una caché con la misma firma (comparando por igualdad), se reutiliza. Si no, se crea y se rellena con las entidades que ya existen.
+- Empezado el `foreach<SYS>(lambda)`, que obtiene la caché del sistema.
+- El `SlotMap` pasa de `std::array` a `std::vector` y crece al llenarse (`resize()` duplica la capacidad y enlaza los slots nuevos a la freelist). Al revisarlo he corregido varios bugs:
+  - `operator[]` devolvía `data_[key.id]` en lugar de `data_[indices_[key.id].id]`, así que tras un `erase` devolvía el elemento de otra key.
+  - `resize()` enlazaba mal la freelist.
+  - `clear()` no reiniciaba `size_` ni invalidaba las keys antiguas. Ahora cada slot recibe una generación nueva al limpiar.
+  - La generación empieza en 1, para que una key por defecto `{0,0}` nunca sea válida.
+- Sacada la key del slotmap a un tipo común `Key`, igual para todos los slotmaps, para que un componente pueda guardar la key de otra entidad sin depender del tipo del manager.
+- `Entity` guarda las keys de sus componentes en un `std::array<Key, N>` indexado por `cmpinfo::id<CMP>()` en lugar de en una tupla.
+- Añadido `getEntityById`, que devuelve `Entity*` (o `nullptr` si no existe).
+
+### Decisiones de diseño
+- Las cachés se indexan por firma, no por sistema: dos sistemas con la misma firma comparten caché.
+- Los sistemas no deberían tener estado. De momento el índice de la caché se guarda en un `static` del sistema; hay que sustituirlo por una forma en la que sea el manager quien sepa qué caché corresponde a cada sistema.
+- `addComponent` sigue devolviendo una referencia (válida hasta el siguiente cambio estructural en ese storage), no la key. La key no le sirve al usuario: para acceder al componente le basta con la entidad y `getComponent`.
+- Para que un componente apunte a otro (por ejemplo, un `CAttach` al `CTransform` de su padre) se guardará la key de la entidad, no una referencia ni un puntero: es estable aunque el slotmap crezca o mueva datos, y la generación detecta si el padre ya no existe.
+
+### Problemas / bloqueos
+- Con las cachés guardando `id`s y las entidades en un `std::vector`, resolver cada `id` en el `foreach` requiere una búsqueda lineal y el recorrido acaba siendo O(n²). Hay que pasar las entidades a un slotmap y guardar keys en las cachés.
+
+### Aprendizajes
+- `"texto" + entero` no concatena: es aritmética de punteros sobre el `const char*`. Hay que usar `std::to_string` o `std::format` (con `{:#b}` para ver una máscara en binario).
+- En la definición fuera de clase de un método, el tipo de retorno se lee antes de entrar en el ámbito de la clase: hay que calificarlo con `typename EntityManager<...>::Entity` o usar un tipo de retorno al final (`auto ... -> T`).
+- `std::reference_wrapper` no puede estar vacío; para expresar "no encontrado" sirve un puntero o un `std::optional<std::reference_wrapper<T>>`.
+- Las lambdas se reciben como parámetro de plantilla (`auto&&` o `F&&`) para que el compilador pueda hacerlas inline; `std::function` añade una llamada indirecta.
+- `std::get<Tipo>` sobre una tupla falla si el tipo aparece más de una vez; con todas las keys del mismo tipo, un `std::array` indexado es lo natural.
+- Al pasar un contenedor de `std::array` a `std::vector`, `reserve` no crea elementos (hace falta `resize`), y las referencias a los elementos se invalidan cada vez que el vector crece.
+
+### Próximos pasos
+- Actualizar el almacenamiento de entidades de `std::vector` a `SlotMap`.
+- Terminar el `foreach`.
+- Actualizar las cachés en todos los casos que les afectan: `addComponent`/`addTag`, `removeComponent`/`removeTag` y `removeEntity`.
+
+---
+
 ## 2026-10-17
 
 **Fase:** Fase1 - ECS basico
