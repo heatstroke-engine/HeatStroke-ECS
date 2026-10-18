@@ -32,7 +32,7 @@ struct TBullet{};
 using CMPs = MP::Typelist<CTransform, CPhysics, CRender>;
 using TAGs = MP::Typelist<TPlayer, TEnemy, TBullet >;
 
-using GameEngine = HeatStroke::EntityManager<CMPs, TAGs,1>;
+using GameEngine = HeatStroke::EntityManager<CMPs, TAGs>;
 using Entity = GameEngine::Entity;
 
 /*
@@ -47,7 +47,12 @@ struct PhysicsSystem
 
     void update(GameEngine& GE) const noexcept
     {
+        auto&& f = ([](const HeatStroke::Key , const CPhysics& phy, CTransform& tra){
+            tra.x += phy.vx;
+            tra.y += phy.vy;
+        });
 
+        GE.foreach<PhysicsSystem>(f);
     }
 };
 
@@ -75,15 +80,15 @@ int main() {
 
     GameEngine GE;
 
-    Entity& e = GE.createEntity();
+    HeatStroke::Key eID = GE.createEntity();
     CPhysics p{33,57};
     CTransform t{0,0};
     CRender r{};
-    GE.addComponents(e, p,t,r);
+    GE.addComponents(eID, p,t,r);
 
-    Entity& e2 = GE.createEntity();
+    HeatStroke::Key eID2 = GE.createEntity();
 
-    GE.addComponent(e2, CPhysics{5,5});
+    GE.addComponent(eID2, CPhysics{5,5});
 
 
     GE.registerSystem<PhysicsSystem>();
@@ -91,6 +96,8 @@ int main() {
 
     HeatStroke::Log::print("PHY System Cache id: " + std::to_string(PhysicsSystem::cache_index));
     HeatStroke::Log::print("RENDER System Cache id: " + std::to_string(RenderSystem::cache_index));
+
+    GE.removeEntity(eID);
 
     return 0;
 }

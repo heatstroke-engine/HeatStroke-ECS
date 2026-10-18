@@ -12,6 +12,42 @@ Registro de progreso diario del desarrollo del ECS de arquetipos con job system 
 **Tiempo invertido:** 4h
 
 ### Qué he hecho hoy
+- Las entidades pasan de `std::vector` a `SlotMap<Entity>`. Toda la API pública del manager trabaja con `Key` en lugar de `Entity&`: `createEntity()` devuelve la key, y `removeEntity`, `addComponent/s`, `removeComponent/s`, `addTag/s`, `removeTag/s` y `getComponent` la reciben. Comprueban con `debugAssertion` que la key es válida, y `removeEntity` y `SlotMap::erase` avisan con un `warning` si reciben una key inválida.
+- `Key` tiene `operator== = default`, necesario para buscarla y borrarla de las cachés con `std::erase`.
+- Terminado `foreach<SYS>(func)`: recorre las keys de la caché del sistema y llama a `func(Key, CMPs&...)` con los componentes de la firma en el orden de `SCMPs`. Desempaqueta la `Typelist` de la firma en `foreach_impl` y accede a los componentes con un `getComponent` privado que no vuelve a buscar la entidad. Comprueba con un assert que la caché corresponde a la firma del sistema.
+- Las cachés se mantienen actualizadas en todos los cambios estructurales:
+  - Cada operación tiene una versión privada `_impl` (`addComponent_impl`, `addTag_impl`, `removeComponent_impl`, `removeTag_impl`) que modifica la entidad sin tocar las cachés.
+  - Las públicas guardan las máscaras previas de la entidad, llaman a las `_impl` y al final llaman una vez a `updateCacheFor(e, old_cmp_mask, old_tag_mask)`. Las versiones plurales también hacen una sola actualización.
+  - `updateCacheFor` compara, para cada caché, si la entidad la cumplía con las máscaras viejas y si la cumple con las nuevas. Así sabe si añadirla, quitarla o no hacer nada, sin buscarla en la caché.
+  - `removeEntity` saca la entidad de las cachés que cumple **antes** de quitarle los componentes, y luego los borra con las `_impl`.
+- Documentado `ecs.hpp` con comentarios Doxygen.
+
+### Decisiones de diseño
+- La API pública recibe keys, no referencias a entidades: una referencia se invalida si el slotmap crece o mueve datos, y la key detecta además si la entidad ya no existe.
+- Las versiones `_impl` son privadas en lugar de añadir un parámetro `bool` a las públicas: así el usuario no puede dejar las cachés desincronizadas.
+- La pertenencia a una caché solo depende de las máscaras finales, así que basta con una actualización al final de cada operación, aunque cambie varios componentes o tags.
+
+### Problemas / bloqueos
+- En `foreach`, `(getComponent<CMPs>(e), ...)` es un fold sobre el operador coma: evalúa todas las llamadas y solo pasa el último componente. Para pasarlos todos como argumentos hay que expandir el pack: `getComponent<CMPs>(e)...`.
+- En `removeEntity`, comprobar las cachés después de borrar los componentes no funcionaba: la máscara ya estaba vacía y la entidad se quedaba en las cachés con una key inválida.
+
+### Aprendizajes
+- `operator== = default` hace que el compilador genere la comparación miembro a miembro; sin declararlo, una struct no tiene `==`.
+- Diferencia entre fold expression (`(expr, ...)`) y expansión de pack en una lista de argumentos (`f(expr...)`).
+- Las funciones miembro de una plantilla de clase no se instancian hasta que se usan, así que un error dentro de una función que nadie llama puede pasar desapercibido al compilar.
+
+### Próximos pasos
+- Emplear Google Benchmark para medir el rendimiento y poder comparar luego este ECS con el futuro ECS de arquetipos/jobs y con EnTT.
+
+---
+
+## 2026-10-18
+
+**Fase:** Fase1 - ECS basico
+
+**Tiempo invertido:** 4h
+
+### Qué he hecho hoy
 - Reorganizado el proyecto en módulos: `code/utils` (log y asserts), `code/mp` (metaprogramación) y `code/ecs` (el ECS). En CMake hay un target por módulo (`hs_utils` estático, `hs_mp` y `hs_ecs` de solo cabeceras), enlazados como `ecs → mp → utils`, de modo que cada módulo solo ve los includes de los módulos de los que depende.
 - Añadido `registerSystem<SYS>()`: los sistemas declaran su firma con `using SCMPs = MP::Typelist<...>` y `using STAGs = MP::Typelist<...>`, y el manager calcula las máscaras en compilación. Con `compileTimeAssertion` se comprueba que todos los componentes y tags de la firma existen en el manager (`Typelist::includes`).
 - Cachés de sistema (`SystemCache`): guardan la firma y la lista de entidades que la cumplen. Si ya existe una caché con la misma firma (comparando por igualdad), se reutiliza. Si no, se crea y se rellena con las entidades que ya existen.

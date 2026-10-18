@@ -11,6 +11,7 @@ namespace HeatStroke
     { 
         std::uint32_t id; 
         std::uint32_t gen; 
+        bool operator==(const Key&) const = default;
     };
     
     /*
@@ -233,6 +234,7 @@ namespace HeatStroke
     {
         if (!is_valid(key))
         {
+            warning("Deleting in Slotmap with an invalid key");
             return false; // Early return, invalid key.
         }
         free(key);
