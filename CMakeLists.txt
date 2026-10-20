@@ -80,22 +80,43 @@ option(HSECS_BUILD_SANDBOX "Compilar el ejecutable de pruebas sandbox" ON)
 
 option(HSECS_BUILD_BENCHMARKS "Compilar el ejecutable de Google benchmarks" ON)
 
+option(HSECS_BUILD_ENTT_BENCHMARKS "Compilar el ejecutable de Google benchmarks con EnTT" ON)
+
 if(HSECS_BUILD_SANDBOX)
     add_executable(hsecs_sandbox sandbox/main.cpp)
     target_link_libraries(hsecs_sandbox PRIVATE hs_ecs)
     target_compile_options(hsecs_sandbox PRIVATE ${CXX_FLAGS_COMUNES})
 endif()
 
-if(HSECS_BUILD_BENCHMARKS)
+if(HSECS_BUILD_BENCHMARKS OR HSECS_BUILD_ENTT_BENCHMARKS)
     FetchContent_Declare(googlebenchmark GIT_REPOSITORY "https://github.com/google/benchmark.git" GIT_TAG v1.10.0 GIT_SHALLOW true)
     # Disable default Google Benchmark ouwn tests
     set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
     set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "" FORCE)
     set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googlebenchmark)
+endif()
+
+if(HSECS_BUILD_BENCHMARKS)
     add_executable(hsecs_benchmarks benchmarks/benchmarks.cpp
         benchmarks/benchmarks.hpp)
     target_link_libraries(hsecs_benchmarks PRIVATE hs_ecs)
     target_link_libraries(hsecs_benchmarks PRIVATE benchmark::benchmark)
     target_compile_options(hsecs_benchmarks PRIVATE ${CXX_FLAGS_COMUNES})
+endif()
+
+if(HSECS_BUILD_ENTT_BENCHMARKS)
+    # SYSTEM: EnTT headers are treated as system headers, so our -Wall -Wextra -Wpedantic don't warn about them
+    FetchContent_Declare(entt GIT_REPOSITORY "https://github.com/skypjack/entt.git" GIT_TAG v4.0.0 GIT_SHALLOW true SYSTEM)
+    FetchContent_MakeAvailable(entt)
+    add_executable(entt_benchmarks benchmarks/enttbenchmarks.cpp
+        benchmarks/enttbenchmarks.hpp)
+    target_link_libraries(entt_benchmarks PRIVATE benchmark::benchmark)
+    target_link_libraries(entt_benchmarks PRIVATE EnTT::EnTT)
+    target_compile_options(entt_benchmarks PRIVATE ${CXX_FLAGS_COMUNES})
+
+    if(MINGW)
+        # Same static runtime as hsecs_benchmarks (which inherits it from hs_utils), so both are linked the same way
+        target_link_options(entt_benchmarks PRIVATE -static-libgcc -static-libstdc++ -static)
+    endif()
 endif()

@@ -4,6 +4,38 @@ Registro de progreso diario del desarrollo del ECS de arquetipos con job system 
 
 ---
 
+## 2026-10-21
+
+**Fase:** Fase1 - ECS basico
+
+**Tiempo invertido:** 2h
+
+### Qué he hecho hoy
+- Integrado EnTT (v4.0.0) con `FetchContent` como dependencia `SYSTEM`, con la opción `HSECS_BUILD_ENTT_BENCHMARKS` y el ejecutable `entt_benchmarks`. Se enlaza igual que `hsecs_benchmarks` (runtime estático), para que la comparación sea justa.
+- Reimplementados los 19 benchmarks con EnTT en `enttbenchmarks.cpp`, con los mismos nombres, componentes, tamaños y preparación del mundo. Además, 4 tests solo de EnTT que iteran con views (`*_VIEW`).
+- `build_and_run_benchmarks.ps1` acepta `-Ecs hsecs|entt` y guarda `<fecha>_<ecs>_benchmark.json`. Una tarea de VS Code para cada ECS.
+- Script `benchmark_to_latex.ps1`: genera un informe LaTeX con los resultados de un ECS.
+- Script `compare_benchmarks_to_latex.ps1`: empareja los dos JSON por test y tamaño y genera un informe LaTeX con la comparativa (resumen, gráficos con pgfplots y tablas por test con la relación HS/EnTT). El PDF se compila con Tectonic.
+
+### Decisiones de diseño
+- Equivalencias con EnTT: un tag es un componente vacío y un sistema registrado (con caché) es un *owning group*. Registrar un sistema = crear su group.
+- Un componente solo puede pertenecer a un group en EnTT: `HealthSystem` posee `CHealth` y solo observa `CTransform`, que pertenece al group de `PhysicsSystem`.
+- Los componentes están duplicados en `enttbenchmarks.hpp` porque ese ejecutable no enlaza `hs_ecs`; tienen que coincidir con los de `benchmarks.hpp`.
+
+### Problemas / bloqueos
+- En CMake el operador lógico es `OR`, no `||`: Google Benchmark tiene que descargarse si se compila cualquiera de los dos ejecutables.
+
+### Aprendizajes
+- Resultado con el tamaño mayor: HeatStroke es más rápido en 7 de 19 tests (destruir entidades con componentes sin sistemas, quitar 2 componentes, registrar un sistema...).
+- Lo que tiene cachés es el cuello de botella: `ADDREMOVECMPCACHED` y `DESTROYENTITIESCACHED` con 100K son ×474 y ×365 más lentos que EnTT, por el `std::erase` lineal.
+- La iteración es ~×8–×13 más lenta: `GAMESCENARIO` con 1M tarda 7,3 ms frente a 0,71 ms con groups y ~2 ms con views.
+- Ambos puntos son justo lo que debe resolver el ECS de arquetipos: datos contiguos por arquetipo y consultas que guardan arquetipos, no entidades.
+
+### Próximos pasos
+- Pasar a la Fase 2: ECS de arquetipos single thread.
+
+---
+
 ## 2026-10-20
 
 **Fase:** Fase1 - ECS basico

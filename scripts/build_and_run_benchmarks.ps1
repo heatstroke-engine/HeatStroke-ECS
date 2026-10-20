@@ -1,4 +1,7 @@
 param(
+    # Which ECS to benchmark: hsecs (ours) or entt
+    [ValidateSet("hsecs", "entt")]
+    [string]$Ecs = "hsecs",
     # Number of times each benchmark is repeated (mean, median and stddev are reported)
     [int]$Repetitions = 10,
     # Regex to run only some benchmarks, e.g. "CREATE"
@@ -12,25 +15,27 @@ $root = Split-Path -Parent $PSScriptRoot
 # The build folder is not deleted, so Google Benchmark is not downloaded again every time.
 $preset = "release"
 $buildDir = Join-Path $root "build\$preset"
+$target = "${Ecs}_benchmarks"
 
 cmake --preset $preset
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-cmake --build --preset $preset
+# Only the chosen target, so an error in the other one does not stop this one
+cmake --build --preset $preset --target $target
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-$exe = Join-Path $buildDir "hsecs_benchmarks.exe"
+$exe = Join-Path $buildDir "$target.exe"
 if (-not (Test-Path $exe)) {
     Write-Error "No se encontro el ejecutable: $exe"
     exit 1
 }
 
-# One json per execution, named like the logs: <dd-mm-YYYY-HHh-MMm-SSs>_benchmark.json
+# One json per execution, named like the logs: <dd-mm-YYYY-HHh-MMm-SSs>_<ecs>_benchmark.json
 $resultsDir = Join-Path $root "benchmarks\results"
 New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
 
 $date = Get-Date -Format "dd-MM-yyyy-HH'h'-mm'm'-ss's'"
-$outFile = Join-Path $resultsDir "${date}_benchmark.json"
+$outFile = Join-Path $resultsDir "${date}_${Ecs}_benchmark.json"
 
 Write-Host "`n--- Ejecutando $exe ---"
 Write-Host "--- Resultados en $outFile ---`n"
