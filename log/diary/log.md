@@ -2,7 +2,47 @@
 
 Registro de progreso diario del desarrollo del ECS de arquetipos con job system multihilo, dentro del TFG de HeatStroke Engine.
 
-----> Obsidian
+---
+
+## 2026-10-20
+
+**Fase:** Fase1 - ECS basico
+
+**Tiempo invertido:** 3h
+
+### Qué he hecho hoy
+- Completada la batería de benchmarks del ECS dummy (1K, 10K, 100K y 1M entidades):
+  - Creación: entidades vacías y añadir 1, 3 y 5 componentes.
+  - Destrucción: entidades vacías y con 1, 3 y 5 componentes.
+  - Quitar 1 y 2 componentes.
+  - Acceso con `getComponent`.
+  - Iteración con 1 y 2 componentes, y con solo la mitad de las entidades cumpliendo la firma (`HALF`).
+  - Añadir y quitar un componente sin cambios en las cachés y con la entidad entrando y saliendo de una caché (`ADDREMOVECMP` / `ADDREMOVECMPCACHED`).
+  - Destruir entidades que están en dos cachés (`DESTROYENTITIESCACHED`).
+  - Registro de un sistema con N entidades ya creadas (`REGISTERSYSTEM`).
+  - Escenario de juego (`GAMESCENARIO`): un frame con `PhysicsSystem`, `HealthSystem` y `RenderSystem` sobre un mundo heterogéneo (50 % unidades, 30 % decorado, 20 % proyectiles).
+- Añadidos `CHealth`, `CGeneric<N>` y `HealthSystem` a `benchmarks.hpp`.
+- Cada test tiene un comentario que explica qué mide y cómo se prepara el mundo.
+
+### Decisiones de diseño
+- Si lo que se mide cambia la estructura del mundo (crear, borrar, añadir o quitar), el mundo se reconstruye en cada iteración en pausa, con un `std::optional<GameEngine>` y `emplace()`. Si no la cambia (iterar, acceder, añadir y luego quitar), se construye una sola vez fuera del bucle.
+- Los tests con cachés cuadráticos (`ADDREMOVECMPCACHED` y `DESTROYENTITIESCACHED`) no llegan a 1M entidades: cada iteración tardaría minutos.
+- En `HALF` el throughput cuenta solo las entidades que recorre el `foreach` (`n/2`).
+
+### Problemas / bloqueos
+- Los tests de iteración reconstruían el mundo en cada vuelta: como el `update` es muy rápido, Google Benchmark hacía cientos de miles de iteraciones y cada una pagaba la preparación. Se arregló construyendo el mundo una sola vez.
+
+### Aprendizajes
+- **El precacheado es cuadrático en los cambios estructurales:** sacar una entidad de una caché es un `std::erase` lineal. Al multiplicar N por 10 el tiempo se multiplica por 100. Con 100K entidades, destruirlas tarda ~2,2 s frente a ~0,36 ms sin cachés.
+- **La iteración no contigua cuesta:** `HALF` recorre la mitad de entidades que `TWOCMPS` pero tarda prácticamente lo mismo, por los saltos en memoria y la cadena de indirecciones del `foreach` (caché → entidad → key → slotmap → dato).
+- **Escenario de juego:** con 1M entidades, tres sistemas triviales ya ocupan ~7,6 ms de los 16,6 ms de un frame a 60 FPS.
+- Formas de paliar el coste de las cachés: swap-and-pop con índice inverso (un sparse set, como EnTT) o cambios estructurales diferidos con command buffers. En un ECS de arquetipos el problema desaparece por diseño: las consultas guardan arquetipos, no entidades, y borrar es un swap-and-pop en la tabla del arquetipo.
+- Los command buffers serán necesarios igualmente con el job system, porque no se puede cambiar la estructura del mundo mientras otro hilo lo recorre.
+- Para comparar de forma justa con EnTT hay que medir su versión con views y con groups, y el ECS de arquetipos con 1 hilo y con N hilos, para separar lo que aporta el diseño de lo que aportan los hilos.
+
+### Próximos pasos
+- Sacar los resultados de todos los benchmarks.
+
 ---
 
 ## 2026-10-19
