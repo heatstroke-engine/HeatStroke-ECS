@@ -62,5 +62,21 @@ namespace HeatStroke
             std::clog.rdbuf(old);
         }
     }
+
+    void Log::printTrace(const std::string_view message,
+                const std::source_location location)
+        {
+            std::clog << "file: "
+                << location.file_name() << '('
+                << location.line() << ':'
+                << location.column() << ") `"
+                << location.function_name() << "`: "
+                << message << '\n';
+        }
+
+    void Log::print(const std::string_view message)
+    {
+        std::clog << "[HEATSTROKE LOG] " << message << '\n';
+    }
     
 }

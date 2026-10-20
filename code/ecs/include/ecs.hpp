@@ -763,8 +763,8 @@ namespace HeatStroke
         constexpr typename cmpinfo::mask_type cmp_mask0 = cmpinfo::template mask(SystemCMPs{});
         constexpr typename taginfo::mask_type tag_mask0 = taginfo::template mask(SystemTAGs{});
 
-        Log::print(std::format("CMP mask {:#b}", cmp_mask0));
-        Log::print(std::format("TAG mask {:#b}", tag_mask0));
+        logPrint(std::format("CMP mask {:#b}", cmp_mask0));
+        logPrint(std::format("TAG mask {:#b}", tag_mask0));
 
 
         // Checks is there is a chache that already mach the signature
@@ -800,7 +800,7 @@ namespace HeatStroke
                 if(contains_cmps && contains_tags)
                 {
                     cache.entities.push_back(e.getId());
-                    Log::print(("Entity with id: " + std::to_string(e.getId().gen) + " added to cache."));
+                    logPrint("Entity with id: " + std::to_string(e.getId().gen) + " added to cache.");
                 }
             }
         }

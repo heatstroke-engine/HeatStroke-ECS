@@ -1,0 +1,908 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-nodecimaldot]{babel}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{booktabs}
+\usepackage{textcomp}
+\usepackage{float}
+\usepackage{pgfplots}
+\usepgfplotslibrary{groupplots}
+\pgfplotsset{compat=1.18}
+
+% Same style for each ECS in every chart
+\definecolor{hscolor}{RGB}{214,96,26}
+\definecolor{enttcolor}{RGB}{38,110,180}
+\pgfplotsset{
+  hs/.style={color=hscolor, mark=*, thick, mark size=1.8pt},
+  entt/.style={color=enttcolor, mark=square*, thick, mark size=1.6pt},
+  enttview/.style={color=enttcolor, mark=triangle*, thick, dashed, mark size=2pt},
+}
+
+\title{HeatStroke ECS dummy frente a EnTT\\Comparativa de los benchmarks}
+\date{20/10/2026}
+\author{}
+
+\begin{document}
+\maketitle
+\sloppy % long \texttt{} names can break lines
+
+\section*{Entorno}
+\begin{itemize}
+  \item CPU: 28 hilos lógicos a 3.42~GHz.
+  \item Cachés: L1 Data: 48 KiB, L1 Instruction: 32 KiB, L2 Unified: 2 MiB, L3 Unified: 33 MiB.
+  \item Google Benchmark v1.10.0, compilado en release. Ambos ejecutables se compilan en release con el mismo compilador, las mismas opciones y el runtime de C++ enlazado de forma estática.
+  \item HeatStroke ECS: ejecución del 20/10/2026 02:40, 10 repeticiones por test.
+  \item EnTT v4.0.0: ejecución del 20/10/2026 20:15, 10 repeticiones por test.
+  \item Todos los tiempos son la media del tiempo real de las repeticiones. El CV es el coeficiente de variación (desviación típica / media).
+\end{itemize}
+
+\section*{Cómo se comparan}
+Los dos ejecutables tienen los mismos tests, con los mismos nombres, componentes, tamaños y preparación del mundo. Las equivalencias son:
+\begin{itemize}
+  \item Un \emph{tag} de HeatStroke es un componente vacío en EnTT.
+  \item Un sistema registrado en HeatStroke guarda una caché con las entidades que cumplen su firma y la actualiza en cada cambio estructural. En EnTT lo equivalente es un \emph{owning group}: registrar un sistema es crear su group, y su \texttt{update} recorre ese group.
+  \item Además, en EnTT se miden los tests de iteración también con \emph{views} (sufijo \texttt{\_VIEW}), que no guardan nada y son la forma habitual de iterar en EnTT. No tienen equivalente en HeatStroke.
+\end{itemize}
+La columna \textbf{HS/EnTT} es el tiempo de HeatStroke dividido entre el de EnTT: mayor que 1 significa que HeatStroke es más lento ese número de veces, y menor que 1 que es más rápido. En cada fila aparece en negrita el tiempo del más rápido.
+
+\section*{Resumen}
+Comparación con el mayor tamaño medido por ambos. HeatStroke es más rápido en 7 de 19 tests y EnTT en 12.
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Test & Entidades & HeatStroke & EnTT & HS/EnTT \\
+\midrule
+\texttt{CREATEENTITES} & 1\,000\,000 & 29.153 ms & \textbf{6.009 ms} & $\times$4.85 \\
+\texttt{CREATE1CMP} & 1\,000\,000 & 10.413 ms & \textbf{5.825 ms} & $\times$1.79 \\
+\texttt{CREATE3CMPS} & 1\,000\,000 & 26.109 ms & \textbf{19.290 ms} & $\times$1.35 \\
+\texttt{CREATE5CMPS} & 1\,000\,000 & 46.063 ms & \textbf{34.443 ms} & $\times$1.34 \\
+\texttt{ERASEENTITYW1CMP} & 1\,000\,000 & \textbf{6.705 ms} & 12.437 ms & $\times$0.54 \\
+\texttt{ERASEENTITYW3CMPS} & 1\,000\,000 & \textbf{10.437 ms} & 26.940 ms & $\times$0.39 \\
+\texttt{ERASEENTITYW5CMPS} & 1\,000\,000 & \textbf{16.142 ms} & 47.643 ms & $\times$0.34 \\
+\texttt{ERASECMP} & 1\,000\,000 & 5.699 ms & \textbf{4.235 ms} & $\times$1.35 \\
+\texttt{ERASECMPS} & 1\,000\,000 & \textbf{6.393 ms} & 15.308 ms & $\times$0.42 \\
+\texttt{DESTROYENTITIES} & 1\,000\,000 & \textbf{5.234 ms} & 5.844 ms & $\times$0.90 \\
+\texttt{GETCMP} & 1\,000\,000 & 2.878 ms & \textbf{1.841 ms} & $\times$1.56 \\
+\texttt{ITERATESINGLECMP} & 1\,000\,000 & 2.534 ms & \textbf{277.494 \textmu s} & $\times$9.13 \\
+\texttt{ITERATETWOCMPS} & 1\,000\,000 & 3.364 ms & \textbf{412.964 \textmu s} & $\times$8.15 \\
+\texttt{ITERATETWOCMPSHALF} & 1\,000\,000 & 2.553 ms & \textbf{201.990 \textmu s} & $\times$12.6 \\
+\texttt{ADDREMOVECMP} & 1\,000\,000 & \textbf{9.827 ms} & 11.168 ms & $\times$0.88 \\
+\texttt{ADDREMOVECMPCACHED} & 100\,000 & 1.143 s & \textbf{2.410 ms} & $\times$474 \\
+\texttt{REGISTERSYSTEM} & 1\,000\,000 & \textbf{4.910 ms} & 9.419 ms & $\times$0.52 \\
+\texttt{DESTROYENTITIESCACHED} & 100\,000 & 2.237 s & \textbf{6.125 ms} & $\times$365 \\
+\texttt{GAMESCENARIO} & 1\,000\,000 & 7.321 ms & \textbf{711.569 \textmu s} & $\times$10.3 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section*{Gráficos}
+\subsection*{Relación de tiempos}
+Cada barra es HS/EnTT con el mayor tamaño común, en escala logarítmica. Las barras a la derecha de la línea son tests en los que HeatStroke es más lento; las de la izquierda, tests en los que es más rápido.
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  xbar, xmode=log, log origin=0, log basis x=10,
+  width=0.85\textwidth, height=13.28cm,
+  bar width=7pt, y dir=reverse,
+  ytick={0,...,18},
+  yticklabels={\texttt{CREATEENTITES},\texttt{CREATE1CMP},\texttt{CREATE3CMPS},\texttt{CREATE5CMPS},\texttt{ERASEENTITYW1CMP},\texttt{ERASEENTITYW3CMPS},\texttt{ERASEENTITYW5CMPS},\texttt{ERASECMP},\texttt{ERASECMPS},\texttt{DESTROYENTITIES},\texttt{GETCMP},\texttt{ITERATESINGLECMP},\texttt{ITERATETWOCMPS},\texttt{ITERATETWOCMPSHALF},\texttt{ADDREMOVECMP},\texttt{ADDREMOVECMPCACHED},\texttt{REGISTERSYSTEM},\texttt{DESTROYENTITIESCACHED},\texttt{GAMESCENARIO}},
+  yticklabel style={font=\scriptsize},
+  xlabel={HS/EnTT (escala logarítmica)},
+  xmajorgrids, grid style={gray!25},
+  enlarge y limits=0.03,
+  nodes near coords={\pgfmathprintnumber[fixed,precision=2]{\pgfplotspointmeta}},
+  point meta=rawx, nodes near coords style={font=\tiny},
+]
+\addplot[fill=hscolor!70, draw=hscolor] coordinates {
+  (4.85178,0)
+  (1.78751,1)
+  (1.35349,2)
+  (1.33738,3)
+  (0.539169,4)
+  (0.38742,5)
+  (0.338814,6)
+  (1.34574,7)
+  (0.417597,8)
+  (0.895661,9)
+  (1.56307,10)
+  (9.13303,11)
+  (8.14568,12)
+  (12.6377,13)
+  (0.879891,14)
+  (474.404,15)
+  (0.521294,16)
+  (365.288,17)
+  (10.2881,18)
+};
+\draw[black, thick] (axis cs:1,-1) -- (axis cs:1,19);
+\end{axis}
+\end{tikzpicture}
+\end{figure}
+
+\subsection*{Escalado por test}
+Tiempo medio por entidad (tiempo total / N) frente al número de entidades, ambos en escala logarítmica. Una línea horizontal significa coste lineal; una línea que sube, coste peor que lineal.
+
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[hide axis, xmin=0, xmax=1, ymin=0, ymax=1, width=2cm, height=2cm,
+  legend columns=3, legend style={draw=none, font=\small, column sep=8pt}]
+\addlegendimage{hs}\addlegendentry{HeatStroke}
+\addlegendimage{entt}\addlegendentry{EnTT (group)}
+\addlegendimage{enttview}\addlegendentry{EnTT (view)}
+\end{axis}
+\end{tikzpicture}
+\end{center}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[
+  group style={group size=2 by 1, horizontal sep=1.6cm},
+  width=0.47\textwidth, height=5.2cm,
+  xmode=log, ymode=log, log basis x=10,
+  xlabel={Entidades}, ylabel={ns / entidad},
+  title style={font=\small}, tick label style={font=\scriptsize}, label style={font=\scriptsize},
+  grid=major, grid style={gray!25},
+]
+\nextgroupplot[title={\texttt{CREATEENTITES}}]
+\addplot[hs] coordinates {
+  (1000,3.91971)
+  (10000,8.4622)
+  (100000,28.9591)
+  (1000000,29.1529)
+};
+\addplot[entt] coordinates {
+  (1000,5.63481)
+  (10000,5.50455)
+  (100000,5.26806)
+  (1000000,6.0087)
+};
+\nextgroupplot[title={\texttt{CREATE1CMP}}]
+\addplot[hs] coordinates {
+  (1000,2.45119)
+  (10000,3.70499)
+  (100000,8.89147)
+  (1000000,10.4131)
+};
+\addplot[entt] coordinates {
+  (1000,5.39329)
+  (10000,4.90492)
+  (100000,4.983)
+  (1000000,5.82548)
+};
+\end{groupplot}
+\end{tikzpicture}
+\end{figure}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[
+  group style={group size=2 by 1, horizontal sep=1.6cm},
+  width=0.47\textwidth, height=5.2cm,
+  xmode=log, ymode=log, log basis x=10,
+  xlabel={Entidades}, ylabel={ns / entidad},
+  title style={font=\small}, tick label style={font=\scriptsize}, label style={font=\scriptsize},
+  grid=major, grid style={gray!25},
+]
+\nextgroupplot[title={\texttt{CREATE3CMPS}}]
+\addplot[hs] coordinates {
+  (1000,8.58101)
+  (10000,12.4595)
+  (100000,24.0544)
+  (1000000,26.1093)
+};
+\addplot[entt] coordinates {
+  (1000,16.8163)
+  (10000,15.527)
+  (100000,15.8483)
+  (1000000,19.2904)
+};
+\nextgroupplot[title={\texttt{CREATE5CMPS}}]
+\addplot[hs] coordinates {
+  (1000,14.8526)
+  (10000,21.9519)
+  (100000,34.7992)
+  (1000000,46.0632)
+};
+\addplot[entt] coordinates {
+  (1000,30.3727)
+  (10000,28.0687)
+  (100000,28.672)
+  (1000000,34.4429)
+};
+\end{groupplot}
+\end{tikzpicture}
+\end{figure}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[
+  group style={group size=2 by 1, horizontal sep=1.6cm},
+  width=0.47\textwidth, height=5.2cm,
+  xmode=log, ymode=log, log basis x=10,
+  xlabel={Entidades}, ylabel={ns / entidad},
+  title style={font=\small}, tick label style={font=\scriptsize}, label style={font=\scriptsize},
+  grid=major, grid style={gray!25},
+]
+\nextgroupplot[title={\texttt{ERASEENTITYW1CMP}}]
+\addplot[hs] coordinates {
+  (1000,5.22053)
+  (10000,5.26177)
+  (100000,5.54307)
+  (1000000,6.70541)
+};
+\addplot[entt] coordinates {
+  (1000,13.1556)
+  (10000,12.1804)
+  (100000,12.2669)
+  (1000000,12.4366)
+};
+\nextgroupplot[title={\texttt{ERASEENTITYW3CMPS}}]
+\addplot[hs] coordinates {
+  (1000,8.20917)
+  (10000,8.4705)
+  (100000,8.81679)
+  (1000000,10.4372)
+};
+\addplot[entt] coordinates {
+  (1000,26.7639)
+  (10000,25.8364)
+  (100000,26.0755)
+  (1000000,26.9402)
+};
+\end{groupplot}
+\end{tikzpicture}
+\end{figure}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[
+  group style={group size=2 by 1, horizontal sep=1.6cm},
+  width=0.47\textwidth, height=5.2cm,
+  xmode=log, ymode=log, log basis x=10,
+  xlabel={Entidades}, ylabel={ns / entidad},
+  title style={font=\small}, tick label style={font=\scriptsize}, label style={font=\scriptsize},
+  grid=major, grid style={gray!25},
+]
+\nextgroupplot[title={\texttt{ERASEENTITYW5CMPS}}]
+\addplot[hs] coordinates {
+  (1000,11.5902)
+  (10000,12.3765)
+  (100000,12.44)
+  (1000000,16.1422)
+};
+\addplot[entt] coordinates {
+  (1000,44.3848)
+  (10000,43.3102)
+  (100000,45.3318)
+  (1000000,47.6432)
+};
+\nextgroupplot[title={\texttt{ERASECMP}}]
+\addplot[hs] coordinates {
+  (1000,4.58472)
+  (10000,4.51541)
+  (100000,4.85358)
+  (1000000,5.69923)
+};
+\addplot[entt] coordinates {
+  (1000,4.51208)
+  (10000,4.10563)
+  (100000,4.10885)
+  (1000000,4.23501)
+};
+\end{groupplot}
+\end{tikzpicture}
+\end{figure}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[
+  group style={group size=2 by 1, horizontal sep=1.6cm},
+  width=0.47\textwidth, height=5.2cm,
+  xmode=log, ymode=log, log basis x=10,
+  xlabel={Entidades}, ylabel={ns / entidad},
+  title style={font=\small}, tick label style={font=\scriptsize}, label style={font=\scriptsize},
+  grid=major, grid style={gray!25},
+]
+\nextgroupplot[title={\texttt{ERASECMPS}}]
+\addplot[hs] coordinates {
+  (1000,5.00187)
+  (10000,4.88333)
+  (100000,5.35968)
+  (1000000,6.39265)
+};
+\addplot[entt] coordinates {
+  (1000,14.8287)
+  (10000,15.3476)
+  (100000,15.0404)
+  (1000000,15.3082)
+};
+\nextgroupplot[title={\texttt{DESTROYENTITIES}}]
+\addplot[hs] coordinates {
+  (1000,3.2914)
+  (10000,3.2251)
+  (100000,3.71269)
+  (1000000,5.23449)
+};
+\addplot[entt] coordinates {
+  (1000,6.3228)
+  (10000,5.71084)
+  (100000,5.83668)
+  (1000000,5.84428)
+};
+\end{groupplot}
+\end{tikzpicture}
+\end{figure}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[
+  group style={group size=2 by 1, horizontal sep=1.6cm},
+  width=0.47\textwidth, height=5.2cm,
+  xmode=log, ymode=log, log basis x=10,
+  xlabel={Entidades}, ylabel={ns / entidad},
+  title style={font=\small}, tick label style={font=\scriptsize}, label style={font=\scriptsize},
+  grid=major, grid style={gray!25},
+]
+\nextgroupplot[title={\texttt{GETCMP}}]
+\addplot[hs] coordinates {
+  (1000,0.931205)
+  (10000,0.615636)
+  (100000,0.998795)
+  (1000000,2.87779)
+};
+\addplot[entt] coordinates {
+  (1000,1.79234)
+  (10000,1.83374)
+  (100000,1.82125)
+  (1000000,1.84112)
+};
+\nextgroupplot[title={\texttt{ITERATESINGLECMP}}]
+\addplot[hs] coordinates {
+  (1000,0.603179)
+  (10000,0.650283)
+  (100000,0.885494)
+  (1000000,2.53436)
+};
+\addplot[entt] coordinates {
+  (1000,0.286688)
+  (10000,0.276417)
+  (100000,0.278216)
+  (1000000,0.277494)
+};
+\addplot[enttview] coordinates {
+  (1000,0.285984)
+  (10000,0.278227)
+  (100000,0.278225)
+  (1000000,0.27931)
+};
+\end{groupplot}
+\end{tikzpicture}
+\end{figure}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[
+  group style={group size=2 by 1, horizontal sep=1.6cm},
+  width=0.47\textwidth, height=5.2cm,
+  xmode=log, ymode=log, log basis x=10,
+  xlabel={Entidades}, ylabel={ns / entidad},
+  title style={font=\small}, tick label style={font=\scriptsize}, label style={font=\scriptsize},
+  grid=major, grid style={gray!25},
+]
+\nextgroupplot[title={\texttt{ITERATETWOCMPS}}]
+\addplot[hs] coordinates {
+  (1000,1.04926)
+  (10000,1.00579)
+  (100000,1.29298)
+  (1000000,3.36388)
+};
+\addplot[entt] coordinates {
+  (1000,0.390276)
+  (10000,0.375655)
+  (100000,0.38163)
+  (1000000,0.412964)
+};
+\addplot[enttview] coordinates {
+  (1000,1.64051)
+  (10000,1.62441)
+  (100000,1.6605)
+  (1000000,1.71202)
+};
+\nextgroupplot[title={\texttt{ITERATETWOCMPSHALF}}]
+\addplot[hs] coordinates {
+  (1000,0.578739)
+  (10000,0.608121)
+  (100000,0.920032)
+  (1000000,2.55268)
+};
+\addplot[entt] coordinates {
+  (1000,0.194712)
+  (10000,0.190278)
+  (100000,0.188928)
+  (1000000,0.20199)
+};
+\addplot[enttview] coordinates {
+  (1000,0.751194)
+  (10000,0.76434)
+  (100000,0.768577)
+  (1000000,0.801762)
+};
+\end{groupplot}
+\end{tikzpicture}
+\end{figure}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[
+  group style={group size=2 by 1, horizontal sep=1.6cm},
+  width=0.47\textwidth, height=5.2cm,
+  xmode=log, ymode=log, log basis x=10,
+  xlabel={Entidades}, ylabel={ns / entidad},
+  title style={font=\small}, tick label style={font=\scriptsize}, label style={font=\scriptsize},
+  grid=major, grid style={gray!25},
+]
+\nextgroupplot[title={\texttt{ADDREMOVECMP}}]
+\addplot[hs] coordinates {
+  (1000,5.3258)
+  (10000,5.50704)
+  (100000,5.53645)
+  (1000000,9.82655)
+};
+\addplot[entt] coordinates {
+  (1000,11.3481)
+  (10000,11.106)
+  (100000,11.0572)
+  (1000000,11.1679)
+};
+\nextgroupplot[title={\texttt{ADDREMOVECMPCACHED}}]
+\addplot[hs] coordinates {
+  (1000,108.008)
+  (10000,1079.33)
+  (100000,11431.4)
+};
+\addplot[entt] coordinates {
+  (1000,24.4074)
+  (10000,24.0428)
+  (100000,24.0963)
+};
+\end{groupplot}
+\end{tikzpicture}
+\end{figure}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[
+  group style={group size=2 by 1, horizontal sep=1.6cm},
+  width=0.47\textwidth, height=5.2cm,
+  xmode=log, ymode=log, log basis x=10,
+  xlabel={Entidades}, ylabel={ns / entidad},
+  title style={font=\small}, tick label style={font=\scriptsize}, label style={font=\scriptsize},
+  grid=major, grid style={gray!25},
+]
+\nextgroupplot[title={\texttt{REGISTERSYSTEM}}]
+\addplot[hs] coordinates {
+  (1000,1.39963)
+  (10000,1.22222)
+  (100000,3.30981)
+  (1000000,4.91027)
+};
+\addplot[entt] coordinates {
+  (1000,8.61133)
+  (10000,8.45938)
+  (100000,8.6927)
+  (1000000,9.4194)
+};
+\nextgroupplot[title={\texttt{DESTROYENTITIESCACHED}}]
+\addplot[hs] coordinates {
+  (1000,220.159)
+  (10000,2330.64)
+  (100000,22374.9)
+};
+\addplot[entt] coordinates {
+  (1000,59.0352)
+  (10000,56.8892)
+  (100000,61.2528)
+};
+\end{groupplot}
+\end{tikzpicture}
+\end{figure}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[
+  group style={group size=1 by 1, horizontal sep=1.6cm},
+  width=0.47\textwidth, height=5.2cm,
+  xmode=log, ymode=log, log basis x=10,
+  xlabel={Entidades}, ylabel={ns / entidad},
+  title style={font=\small}, tick label style={font=\scriptsize}, label style={font=\scriptsize},
+  grid=major, grid style={gray!25},
+]
+\nextgroupplot[title={\texttt{GAMESCENARIO}}]
+\addplot[hs] coordinates {
+  (1000,1.54276)
+  (10000,1.63587)
+  (100000,2.65592)
+  (1000000,7.32068)
+};
+\addplot[entt] coordinates {
+  (1000,0.70629)
+  (10000,0.670813)
+  (100000,0.674362)
+  (1000000,0.711569)
+};
+\addplot[enttview] coordinates {
+  (1000,1.93868)
+  (10000,1.90981)
+  (100000,1.93375)
+  (1000000,2.02991)
+};
+\end{groupplot}
+\end{tikzpicture}
+\end{figure}
+
+\section*{Resultados detallados}
+
+\subsection*{\texttt{BM\_CREATEENTITES}}
+Crear N entidades vacías en un mundo vacío. La construcción del mundo no se mide.
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{rrrrrr}
+\toprule
+ & \multicolumn{2}{c}{HeatStroke} & \multicolumn{3}{c}{EnTT} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-6}
+Entidades & Media & CV & Media & CV & HS/EnTT \\
+\midrule
+1\,000 & \textbf{3.920 \textmu s} & 4.8\,\% & 5.635 \textmu s & 0.4\,\% & $\times$0.70 \\
+10\,000 & 84.622 \textmu s & 6.7\,\% & \textbf{55.046 \textmu s} & 0.5\,\% & $\times$1.54 \\
+100\,000 & 2.896 ms & 2.9\,\% & \textbf{526.806 \textmu s} & 1.2\,\% & $\times$5.50 \\
+1\,000\,000 & 29.153 ms & 3.3\,\% & \textbf{6.009 ms} & 2.0\,\% & $\times$4.85 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_CREATE1CMP}}
+Añadir 1 componente (\texttt{CPhysics}) a N entidades vacías.
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{rrrrrr}
+\toprule
+ & \multicolumn{2}{c}{HeatStroke} & \multicolumn{3}{c}{EnTT} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-6}
+Entidades & Media & CV & Media & CV & HS/EnTT \\
+\midrule
+1\,000 & \textbf{2.451 \textmu s} & 1.1\,\% & 5.393 \textmu s & 0.1\,\% & $\times$0.45 \\
+10\,000 & \textbf{37.050 \textmu s} & 0.7\,\% & 49.049 \textmu s & 0.4\,\% & $\times$0.76 \\
+100\,000 & 889.147 \textmu s & 0.9\,\% & \textbf{498.300 \textmu s} & 1.0\,\% & $\times$1.78 \\
+1\,000\,000 & 10.413 ms & 1.2\,\% & \textbf{5.825 ms} & 2.0\,\% & $\times$1.79 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_CREATE3CMPS}}
+Añadir 3 componentes (\texttt{CPhysics}, \texttt{CRender}, \texttt{CTransform}) a N entidades vacías.
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{rrrrrr}
+\toprule
+ & \multicolumn{2}{c}{HeatStroke} & \multicolumn{3}{c}{EnTT} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-6}
+Entidades & Media & CV & Media & CV & HS/EnTT \\
+\midrule
+1\,000 & \textbf{8.581 \textmu s} & 0.4\,\% & 16.816 \textmu s & 0.4\,\% & $\times$0.51 \\
+10\,000 & \textbf{124.595 \textmu s} & 0.6\,\% & 155.270 \textmu s & 0.3\,\% & $\times$0.80 \\
+100\,000 & 2.405 ms & 1.3\,\% & \textbf{1.585 ms} & 0.4\,\% & $\times$1.52 \\
+1\,000\,000 & 26.109 ms & 1.7\,\% & \textbf{19.290 ms} & 2.3\,\% & $\times$1.35 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_CREATE5CMPS}}
+Añadir 5 componentes (\texttt{CPhysics}, \texttt{CRender}, \texttt{CTransform}, \texttt{CGeneric<0>}, \texttt{CGeneric<1>}) a N entidades vacías.
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{rrrrrr}
+\toprule
+ & \multicolumn{2}{c}{HeatStroke} & \multicolumn{3}{c}{EnTT} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-6}
+Entidades & Media & CV & Media & CV & HS/EnTT \\
+\midrule
+1\,000 & \textbf{14.853 \textmu s} & 2.3\,\% & 30.373 \textmu s & 0.6\,\% & $\times$0.49 \\
+10\,000 & \textbf{219.519 \textmu s} & 0.5\,\% & 280.687 \textmu s & 0.6\,\% & $\times$0.78 \\
+100\,000 & 3.480 ms & 1.2\,\% & \textbf{2.867 ms} & 0.3\,\% & $\times$1.21 \\
+1\,000\,000 & 46.063 ms & 2.4\,\% & \textbf{34.443 ms} & 2.8\,\% & $\times$1.34 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_ERASEENTITYW1CMP}}
+Destruir N entidades con 1 componente. Sin sistemas registrados.
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{rrrrrr}
+\toprule
+ & \multicolumn{2}{c}{HeatStroke} & \multicolumn{3}{c}{EnTT} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-6}
+Entidades & Media & CV & Media & CV & HS/EnTT \\
+\midrule
+1\,000 & \textbf{5.221 \textmu s} & 1.9\,\% & 13.156 \textmu s & 0.3\,\% & $\times$0.40 \\
+10\,000 & \textbf{52.618 \textmu s} & 0.6\,\% & 121.804 \textmu s & 0.9\,\% & $\times$0.43 \\
+100\,000 & \textbf{554.307 \textmu s} & 0.8\,\% & 1.227 ms & 0.8\,\% & $\times$0.45 \\
+1\,000\,000 & \textbf{6.705 ms} & 2.5\,\% & 12.437 ms & 0.9\,\% & $\times$0.54 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_ERASEENTITYW3CMPS}}
+Destruir N entidades con 3 componentes. Sin sistemas registrados.
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{rrrrrr}
+\toprule
+ & \multicolumn{2}{c}{HeatStroke} & \multicolumn{3}{c}{EnTT} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-6}
+Entidades & Media & CV & Media & CV & HS/EnTT \\
+\midrule
+1\,000 & \textbf{8.209 \textmu s} & 3.1\,\% & 26.764 \textmu s & 0.2\,\% & $\times$0.31 \\
+10\,000 & \textbf{84.705 \textmu s} & 3.0\,\% & 258.364 \textmu s & 0.4\,\% & $\times$0.33 \\
+100\,000 & \textbf{881.679 \textmu s} & 2.1\,\% & 2.608 ms & 0.8\,\% & $\times$0.34 \\
+1\,000\,000 & \textbf{10.437 ms} & 2.3\,\% & 26.940 ms & 0.9\,\% & $\times$0.39 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_ERASEENTITYW5CMPS}}
+Destruir N entidades con 5 componentes. Sin sistemas registrados.
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{rrrrrr}
+\toprule
+ & \multicolumn{2}{c}{HeatStroke} & \multicolumn{3}{c}{EnTT} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-6}
+Entidades & Media & CV & Media & CV & HS/EnTT \\
+\midrule
+1\,000 & \textbf{11.590 \textmu s} & 2.1\,\% & 44.385 \textmu s & 0.4\,\% & $\times$0.26 \\
+10\,000 & \textbf{123.765 \textmu s} & 3.6\,\% & 433.102 \textmu s & 0.5\,\% & $\times$0.29 \\
+100\,000 & \textbf{1.244 ms} & 3.9\,\% & 4.533 ms & 1.3\,\% & $\times$0.27 \\
+1\,000\,000 & \textbf{16.142 ms} & 1.8\,\% & 47.643 ms & 3.3\,\% & $\times$0.34 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_ERASECMP}}
+Quitar 1 componente (\texttt{CPhysics}) a N entidades. Sin sistemas registrados.
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{rrrrrr}
+\toprule
+ & \multicolumn{2}{c}{HeatStroke} & \multicolumn{3}{c}{EnTT} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-6}
+Entidades & Media & CV & Media & CV & HS/EnTT \\
+\midrule
+1\,000 & 4.585 \textmu s & 0.6\,\% & \textbf{4.512 \textmu s} & 0.3\,\% & $\times$1.02 \\
+10\,000 & 45.154 \textmu s & 1.3\,\% & \textbf{41.056 \textmu s} & 1.7\,\% & $\times$1.10 \\
+100\,000 & 485.358 \textmu s & 0.7\,\% & \textbf{410.885 \textmu s} & 1.4\,\% & $\times$1.18 \\
+1\,000\,000 & 5.699 ms & 2.6\,\% & \textbf{4.235 ms} & 1.1\,\% & $\times$1.35 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_ERASECMPS}}
+Quitar 2 componentes (\texttt{CPhysics}, \texttt{CTransform}) a N entidades. Sin sistemas registrados.
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{rrrrrr}
+\toprule
+ & \multicolumn{2}{c}{HeatStroke} & \multicolumn{3}{c}{EnTT} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-6}
+Entidades & Media & CV & Media & CV & HS/EnTT \\
+\midrule
+1\,000 & \textbf{5.002 \textmu s} & 3.2\,\% & 14.829 \textmu s & 0.4\,\% & $\times$0.34 \\
+10\,000 & \textbf{48.833 \textmu s} & 1.9\,\% & 153.476 \textmu s & 1.6\,\% & $\times$0.32 \\
+100\,000 & \textbf{535.968 \textmu s} & 0.9\,\% & 1.504 ms & 0.8\,\% & $\times$0.36 \\
+1\,000\,000 & \textbf{6.393 ms} & 2.0\,\% & 15.308 ms & 0.8\,\% & $\times$0.42 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_DESTROYENTITIES}}
+Destruir N entidades vacías. Sin sistemas registrados.
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{rrrrrr}
+\toprule
+ & \multicolumn{2}{c}{HeatStroke} & \multicolumn{3}{c}{EnTT} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-6}
+Entidades & Media & CV & Media & CV & HS/EnTT \\
+\midrule
+1\,000 & \textbf{3.291 \textmu s} & 1.2\,\% & 6.323 \textmu s & 0.4\,\% & $\times$0.52 \\
+10\,000 & \textbf{32.251 \textmu s} & 0.7\,\% & 57.108 \textmu s & 0.7\,\% & $\times$0.56 \\
+100\,000 & \textbf{371.269 \textmu s} & 0.8\,\% & 583.668 \textmu s & 1.3\,\% & $\times$0.64 \\
+1\,000\,000 & \textbf{5.234 ms} & 1.6\,\% & 5.844 ms & 0.6\,\% & $\times$0.90 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_GETCMP}}
+Acceder y escribir \texttt{CPhysics} de N entidades por su identificador, en orden de creación.
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{rrrrrr}
+\toprule
+ & \multicolumn{2}{c}{HeatStroke} & \multicolumn{3}{c}{EnTT} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-6}
+Entidades & Media & CV & Media & CV & HS/EnTT \\
+\midrule
+1\,000 & \textbf{931.2 ns} & 76.2\,\% & 1.792 \textmu s & 6.6\,\% & $\times$0.52 \\
+10\,000 & \textbf{6.156 \textmu s} & 3.0\,\% & 18.337 \textmu s & 2.2\,\% & $\times$0.34 \\
+100\,000 & \textbf{99.880 \textmu s} & 1.9\,\% & 182.125 \textmu s & 1.0\,\% & $\times$0.55 \\
+1\,000\,000 & 2.878 ms & 2.4\,\% & \textbf{1.841 ms} & 0.7\,\% & $\times$1.56 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_ITERATESINGLECMP}}
+\texttt{RenderSystem} (1 componente) sobre N entidades que cumplen su firma.
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{rrrrrrrrr}
+\toprule
+ & \multicolumn{2}{c}{HeatStroke} & \multicolumn{3}{c}{EnTT (group)} & \multicolumn{3}{c}{EnTT (view)} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-6}\cmidrule(lr){7-9}
+Entidades & Media & CV & Media & CV & HS/EnTT & Media & CV & HS/EnTT \\
+\midrule
+1\,000 & 603.2 ns & 8.6\,\% & 286.7 ns & 0.4\,\% & $\times$2.10 & \textbf{286.0 ns} & 0.4\,\% & $\times$2.11 \\
+10\,000 & 6.503 \textmu s & 5.6\,\% & \textbf{2.764 \textmu s} & 0.5\,\% & $\times$2.35 & 2.782 \textmu s & 0.6\,\% & $\times$2.34 \\
+100\,000 & 88.549 \textmu s & 1.9\,\% & \textbf{27.822 \textmu s} & 0.8\,\% & $\times$3.18 & 27.822 \textmu s & 1.0\,\% & $\times$3.18 \\
+1\,000\,000 & 2.534 ms & 1.5\,\% & \textbf{277.494 \textmu s} & 0.7\,\% & $\times$9.13 & 279.310 \textmu s & 0.6\,\% & $\times$9.07 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_ITERATETWOCMPS}}
+\texttt{PhysicsSystem} (2 componentes) sobre N entidades que cumplen su firma.
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{rrrrrrrrr}
+\toprule
+ & \multicolumn{2}{c}{HeatStroke} & \multicolumn{3}{c}{EnTT (group)} & \multicolumn{3}{c}{EnTT (view)} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-6}\cmidrule(lr){7-9}
+Entidades & Media & CV & Media & CV & HS/EnTT & Media & CV & HS/EnTT \\
+\midrule
+1\,000 & 1.049 \textmu s & 3.4\,\% & \textbf{390.3 ns} & 5.8\,\% & $\times$2.69 & 1.641 \textmu s & 2.3\,\% & $\times$0.64 \\
+10\,000 & 10.058 \textmu s & 1.9\,\% & \textbf{3.757 \textmu s} & 1.5\,\% & $\times$2.68 & 16.244 \textmu s & 0.9\,\% & $\times$0.62 \\
+100\,000 & 129.298 \textmu s & 7.1\,\% & \textbf{38.163 \textmu s} & 1.8\,\% & $\times$3.39 & 166.050 \textmu s & 0.8\,\% & $\times$0.78 \\
+1\,000\,000 & 3.364 ms & 7.2\,\% & \textbf{412.964 \textmu s} & 0.5\,\% & $\times$8.15 & 1.712 ms & 0.6\,\% & $\times$1.96 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_ITERATETWOCMPSHALF}}
+\texttt{PhysicsSystem} sobre N entidades de las que solo la mitad cumple su firma.
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{rrrrrrrrr}
+\toprule
+ & \multicolumn{2}{c}{HeatStroke} & \multicolumn{3}{c}{EnTT (group)} & \multicolumn{3}{c}{EnTT (view)} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-6}\cmidrule(lr){7-9}
+Entidades & Media & CV & Media & CV & HS/EnTT & Media & CV & HS/EnTT \\
+\midrule
+1\,000 & 578.7 ns & 4.9\,\% & \textbf{194.7 ns} & 0.3\,\% & $\times$2.97 & 751.2 ns & 0.4\,\% & $\times$0.77 \\
+10\,000 & 6.081 \textmu s & 4.0\,\% & \textbf{1.903 \textmu s} & 1.4\,\% & $\times$3.20 & 7.643 \textmu s & 0.9\,\% & $\times$0.80 \\
+100\,000 & 92.003 \textmu s & 3.3\,\% & \textbf{18.893 \textmu s} & 0.6\,\% & $\times$4.87 & 76.858 \textmu s & 1.2\,\% & $\times$1.20 \\
+1\,000\,000 & 2.553 ms & 5.1\,\% & \textbf{201.990 \textmu s} & 0.7\,\% & $\times$12.6 & 801.762 \textmu s & 1.2\,\% & $\times$3.18 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_ADDREMOVECMP}}
+Añadir y quitar \texttt{CHealth} a N entidades con sistemas registrados, sin que cambie ninguna caché ni group.
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{rrrrrr}
+\toprule
+ & \multicolumn{2}{c}{HeatStroke} & \multicolumn{3}{c}{EnTT} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-6}
+Entidades & Media & CV & Media & CV & HS/EnTT \\
+\midrule
+1\,000 & \textbf{5.326 \textmu s} & 1.5\,\% & 11.348 \textmu s & 5.2\,\% & $\times$0.47 \\
+10\,000 & \textbf{55.070 \textmu s} & 5.1\,\% & 111.060 \textmu s & 0.7\,\% & $\times$0.50 \\
+100\,000 & \textbf{553.645 \textmu s} & 6.8\,\% & 1.106 ms & 0.4\,\% & $\times$0.50 \\
+1\,000\,000 & \textbf{9.827 ms} & 6.1\,\% & 11.168 ms & 0.5\,\% & $\times$0.88 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_ADDREMOVECMPCACHED}}
+Añadir y quitar \texttt{CHealth} a N entidades: cada una entra y sale de la caché (group en EnTT) de \texttt{HealthSystem}.
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{rrrrrr}
+\toprule
+ & \multicolumn{2}{c}{HeatStroke} & \multicolumn{3}{c}{EnTT} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-6}
+Entidades & Media & CV & Media & CV & HS/EnTT \\
+\midrule
+1\,000 & 108.008 \textmu s & 0.4\,\% & \textbf{24.407 \textmu s} & 2.1\,\% & $\times$4.43 \\
+10\,000 & 10.793 ms & 0.6\,\% & \textbf{240.428 \textmu s} & 0.8\,\% & $\times$44.9 \\
+100\,000 & 1.143 s & 4.7\,\% & \textbf{2.410 ms} & 0.6\,\% & $\times$474 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_REGISTERSYSTEM}}
+Registrar \texttt{PhysicsSystem} con N entidades ya creadas que cumplen su firma. En EnTT, crear su group.
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{rrrrrr}
+\toprule
+ & \multicolumn{2}{c}{HeatStroke} & \multicolumn{3}{c}{EnTT} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-6}
+Entidades & Media & CV & Media & CV & HS/EnTT \\
+\midrule
+1\,000 & \textbf{1.400 \textmu s} & 1.3\,\% & 8.611 \textmu s & 0.2\,\% & $\times$0.16 \\
+10\,000 & \textbf{12.222 \textmu s} & 4.0\,\% & 84.594 \textmu s & 0.4\,\% & $\times$0.14 \\
+100\,000 & \textbf{330.981 \textmu s} & 0.7\,\% & 869.270 \textmu s & 2.7\,\% & $\times$0.38 \\
+1\,000\,000 & \textbf{4.910 ms} & 1.5\,\% & 9.419 ms & 2.4\,\% & $\times$0.52 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_DESTROYENTITIESCACHED}}
+Destruir N entidades que están en las cachés (groups en EnTT) de \texttt{PhysicsSystem} y \texttt{HealthSystem}.
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{rrrrrr}
+\toprule
+ & \multicolumn{2}{c}{HeatStroke} & \multicolumn{3}{c}{EnTT} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-6}
+Entidades & Media & CV & Media & CV & HS/EnTT \\
+\midrule
+1\,000 & 220.159 \textmu s & 0.4\,\% & \textbf{59.035 \textmu s} & 0.5\,\% & $\times$3.73 \\
+10\,000 & 23.306 ms & 1.9\,\% & \textbf{568.892 \textmu s} & 0.5\,\% & $\times$41.0 \\
+100\,000 & 2.237 s & 3.2\,\% & \textbf{6.125 ms} & 1.2\,\% & $\times$365 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_GAMESCENARIO}}
+Un frame con \texttt{PhysicsSystem}, \texttt{HealthSystem} y \texttt{RenderSystem} sobre un mundo heterogéneo: 50\,\% unidades, 30\,\% decorado y 20\,\% proyectiles.
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{rrrrrrrrr}
+\toprule
+ & \multicolumn{2}{c}{HeatStroke} & \multicolumn{3}{c}{EnTT (group)} & \multicolumn{3}{c}{EnTT (view)} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-6}\cmidrule(lr){7-9}
+Entidades & Media & CV & Media & CV & HS/EnTT & Media & CV & HS/EnTT \\
+\midrule
+1\,000 & 1.543 \textmu s & 6.0\,\% & \textbf{706.3 ns} & 3.7\,\% & $\times$2.18 & 1.939 \textmu s & 2.7\,\% & $\times$0.80 \\
+10\,000 & 16.359 \textmu s & 1.2\,\% & \textbf{6.708 \textmu s} & 0.7\,\% & $\times$2.44 & 19.098 \textmu s & 0.7\,\% & $\times$0.86 \\
+100\,000 & 265.592 \textmu s & 2.4\,\% & \textbf{67.436 \textmu s} & 0.5\,\% & $\times$3.94 & 193.375 \textmu s & 0.7\,\% & $\times$1.37 \\
+1\,000\,000 & 7.321 ms & 1.5\,\% & \textbf{711.569 \textmu s} & 0.5\,\% & $\times$10.3 & 2.030 ms & 1.0\,\% & $\times$3.61 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\end{document}

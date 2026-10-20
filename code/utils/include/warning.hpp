@@ -5,9 +5,8 @@
 
 #define compileTimeAssertion(b, ...) static_assert(b, ##__VA_ARGS__)
 
-#define DEBUG_MODE
 
-#ifdef DEBUG_MODE
+#ifdef HS_DEBUG_MODE
 
 namespace Bsp
 {
@@ -24,9 +23,7 @@ namespace Bsp
 
 #define debugAssertion(b, ...)  Bsp::runTimeAssertion_imp(static_cast<bool>(b), #b, ##__VA_ARGS__) // debugAssertion will perform a debug assertion and stop the execiuton if fails.
 
-#endif
-
-#ifndef DEBUG_MODE
+#else
 
 #define warning(...) static_cast<void>(0)
 

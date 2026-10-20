@@ -1,0 +1,330 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-nodecimaldot]{babel}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{booktabs}
+\usepackage{textcomp}
+\usepackage{float}
+
+\title{HeatStroke ECS dummy\\Resultados de los benchmarks}
+\date{20/10/2026 02:40}
+\author{}
+
+\begin{document}
+\maketitle
+\sloppy % long \texttt{} names can break lines
+
+\section*{Entorno}
+\begin{itemize}
+  \item CPU: 28 hilos l\'ogicos a 3.42~GHz.
+  \item Cach\'es: L1 Data: 48 KiB, L1 Instruction: 32 KiB, L2 Unified: 2 MiB, L3 Unified: 33 MiB.
+  \item Google Benchmark v1.10.0, compilado en release.
+  \item Cada test se repite 10 veces. Se muestran la media, la mediana, la desviaci\'on t\'ipica y el coeficiente de variaci\'on (CV) del tiempo real, y el throughput medio.
+\end{itemize}
+
+\section*{Resultados}
+
+\subsection*{\texttt{BM\_CREATEENTITES}}
+Crear N entidades vacías en un manager vacío. La construcción del manager no se mide.
+\begin{table}[H]
+\centering
+\begin{tabular}{rrrrrr}
+\toprule
+Entidades & Media & Mediana & Desv. t\'ipica & CV & Throughput \\
+\midrule
+1\,000 & 3.920 \textmu s & 3.930 \textmu s & 188.1 ns & 4.80\,\% & 258.22 M/s \\
+10\,000 & 84.622 \textmu s & 83.683 \textmu s & 5.688 \textmu s & 6.72\,\% & 121.74 M/s \\
+100\,000 & 2.896 ms & 2.884 ms & 82.881 \textmu s & 2.86\,\% & 35.24 M/s \\
+1\,000\,000 & 29.153 ms & 28.821 ms & 947.704 \textmu s & 3.25\,\% & 36.10 M/s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_CREATE1CMP}}
+Añadir 1 componente (\texttt{CPhysics}) a N entidades vacías.
+\begin{table}[H]
+\centering
+\begin{tabular}{rrrrrr}
+\toprule
+Entidades & Media & Mediana & Desv. t\'ipica & CV & Throughput \\
+\midrule
+1\,000 & 2.451 \textmu s & 2.443 \textmu s & 26.8 ns & 1.09\,\% & 434.75 M/s \\
+10\,000 & 37.050 \textmu s & 36.973 \textmu s & 246.0 ns & 0.66\,\% & 279.58 M/s \\
+100\,000 & 889.147 \textmu s & 890.332 \textmu s & 7.614 \textmu s & 0.86\,\% & 108.01 M/s \\
+1\,000\,000 & 10.413 ms & 10.432 ms & 122.104 \textmu s & 1.17\,\% & 97.50 M/s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_CREATE3CMPS}}
+Añadir 3 componentes (\texttt{CPhysics}, \texttt{CRender}, \texttt{CTransform}) a N entidades vacías con \texttt{addComponents}.
+\begin{table}[H]
+\centering
+\begin{tabular}{rrrrrr}
+\toprule
+Entidades & Media & Mediana & Desv. t\'ipica & CV & Throughput \\
+\midrule
+1\,000 & 8.581 \textmu s & 8.596 \textmu s & 35.5 ns & 0.41\,\% & 125.77 M/s \\
+10\,000 & 124.595 \textmu s & 124.276 \textmu s & 704.3 ns & 0.57\,\% & 86.79 M/s \\
+100\,000 & 2.405 ms & 2.414 ms & 31.392 \textmu s & 1.31\,\% & 41.78 M/s \\
+1\,000\,000 & 26.109 ms & 25.988 ms & 440.415 \textmu s & 1.69\,\% & 38.75 M/s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_CREATE5CMPS}}
+Añadir 5 componentes (\texttt{CPhysics}, \texttt{CRender}, \texttt{CTransform}, \texttt{CGeneric<0>}, \texttt{CGeneric<1>}) a N entidades vacías.
+\begin{table}[H]
+\centering
+\begin{tabular}{rrrrrr}
+\toprule
+Entidades & Media & Mediana & Desv. t\'ipica & CV & Throughput \\
+\midrule
+1\,000 & 14.853 \textmu s & 14.689 \textmu s & 343.8 ns & 2.31\,\% & 70.93 M/s \\
+10\,000 & 219.519 \textmu s & 219.563 \textmu s & 1.093 \textmu s & 0.50\,\% & 47.83 M/s \\
+100\,000 & 3.480 ms & 3.473 ms & 41.637 \textmu s & 1.20\,\% & 29.72 M/s \\
+1\,000\,000 & 46.063 ms & 46.137 ms & 1.106 ms & 2.40\,\% & 22.53 M/s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_ERASEENTITYW1CMP}}
+Destruir N entidades con 1 componente. Sin sistemas registrados.
+\begin{table}[H]
+\centering
+\begin{tabular}{rrrrrr}
+\toprule
+Entidades & Media & Mediana & Desv. t\'ipica & CV & Throughput \\
+\midrule
+1\,000 & 5.221 \textmu s & 5.198 \textmu s & 101.4 ns & 1.94\,\% & 203.04 M/s \\
+10\,000 & 52.618 \textmu s & 52.556 \textmu s & 338.2 ns & 0.64\,\% & 178.16 M/s \\
+100\,000 & 554.307 \textmu s & 554.097 \textmu s & 4.541 \textmu s & 0.82\,\% & 183.06 M/s \\
+1\,000\,000 & 6.705 ms & 6.687 ms & 164.331 \textmu s & 2.45\,\% & 147.14 M/s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_ERASEENTITYW3CMPS}}
+Destruir N entidades con 3 componentes. Sin sistemas registrados.
+\begin{table}[H]
+\centering
+\begin{tabular}{rrrrrr}
+\toprule
+Entidades & Media & Mediana & Desv. t\'ipica & CV & Throughput \\
+\midrule
+1\,000 & 8.209 \textmu s & 8.151 \textmu s & 255.2 ns & 3.11\,\% & 130.03 M/s \\
+10\,000 & 84.705 \textmu s & 83.459 \textmu s & 2.530 \textmu s & 2.99\,\% & 125.24 M/s \\
+100\,000 & 881.679 \textmu s & 879.352 \textmu s & 18.681 \textmu s & 2.12\,\% & 114.42 M/s \\
+1\,000\,000 & 10.437 ms & 10.403 ms & 235.780 \textmu s & 2.26\,\% & 97.11 M/s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_ERASEENTITYW5CMPS}}
+Destruir N entidades con 5 componentes. Sin sistemas registrados.
+\begin{table}[H]
+\centering
+\begin{tabular}{rrrrrr}
+\toprule
+Entidades & Media & Mediana & Desv. t\'ipica & CV & Throughput \\
+\midrule
+1\,000 & 11.590 \textmu s & 11.672 \textmu s & 246.6 ns & 2.13\,\% & 87.15 M/s \\
+10\,000 & 123.765 \textmu s & 121.698 \textmu s & 4.467 \textmu s & 3.61\,\% & 81.38 M/s \\
+100\,000 & 1.244 ms & 1.233 ms & 48.595 \textmu s & 3.91\,\% & 89.87 M/s \\
+1\,000\,000 & 16.142 ms & 16.139 ms & 290.014 \textmu s & 1.80\,\% & 61.56 M/s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_ERASECMP}}
+Quitar 1 componente (\texttt{CPhysics}) a N entidades. Sin sistemas registrados.
+\begin{table}[H]
+\centering
+\begin{tabular}{rrrrrr}
+\toprule
+Entidades & Media & Mediana & Desv. t\'ipica & CV & Throughput \\
+\midrule
+1\,000 & 4.585 \textmu s & 4.582 \textmu s & 28.2 ns & 0.61\,\% & 214.53 M/s \\
+10\,000 & 45.154 \textmu s & 45.336 \textmu s & 578.5 ns & 1.28\,\% & 222.87 M/s \\
+100\,000 & 485.358 \textmu s & 485.992 \textmu s & 3.434 \textmu s & 0.71\,\% & 221.32 M/s \\
+1\,000\,000 & 5.699 ms & 5.663 ms & 145.488 \textmu s & 2.55\,\% & 176.61 M/s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_ERASECMPS}}
+Quitar 2 componentes (\texttt{CPhysics}, \texttt{CTransform}) a N entidades con \texttt{removeComponents}. Sin sistemas registrados.
+\begin{table}[H]
+\centering
+\begin{tabular}{rrrrrr}
+\toprule
+Entidades & Media & Mediana & Desv. t\'ipica & CV & Throughput \\
+\midrule
+1\,000 & 5.002 \textmu s & 4.936 \textmu s & 160.9 ns & 3.22\,\% & 198.01 M/s \\
+10\,000 & 48.833 \textmu s & 48.694 \textmu s & 927.1 ns & 1.90\,\% & 210.10 M/s \\
+100\,000 & 535.968 \textmu s & 536.604 \textmu s & 4.708 \textmu s & 0.88\,\% & 189.56 M/s \\
+1\,000\,000 & 6.393 ms & 6.378 ms & 125.040 \textmu s & 1.96\,\% & 160.55 M/s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_DESTROYENTITIES}}
+Destruir N entidades vacías. Sin sistemas registrados.
+\begin{table}[H]
+\centering
+\begin{tabular}{rrrrrr}
+\toprule
+Entidades & Media & Mediana & Desv. t\'ipica & CV & Throughput \\
+\midrule
+1\,000 & 3.291 \textmu s & 3.291 \textmu s & 40.5 ns & 1.23\,\% & 284.93 M/s \\
+10\,000 & 32.251 \textmu s & 32.306 \textmu s & 241.9 ns & 0.75\,\% & 301.69 M/s \\
+100\,000 & 371.269 \textmu s & 372.230 \textmu s & 3.028 \textmu s & 0.82\,\% & 294.52 M/s \\
+1\,000\,000 & 5.234 ms & 5.249 ms & 86.117 \textmu s & 1.65\,\% & 194.77 M/s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_GETCMP}}
+Acceder y escribir \texttt{CPhysics} de N entidades con \texttt{getComponent}, en orden de creación.
+\begin{table}[H]
+\centering
+\begin{tabular}{rrrrrr}
+\toprule
+Entidades & Media & Mediana & Desv. t\'ipica & CV & Throughput \\
+\midrule
+1\,000 & 931.2 ns & 602.9 ns & 710.0 ns & 76.25\,\% & 1.43 G/s \\
+10\,000 & 6.156 \textmu s & 6.108 \textmu s & 183.1 ns & 2.97\,\% & 1.63 G/s \\
+100\,000 & 99.880 \textmu s & 100.253 \textmu s & 1.867 \textmu s & 1.87\,\% & 1.02 G/s \\
+1\,000\,000 & 2.878 ms & 2.900 ms & 68.681 \textmu s & 2.39\,\% & 359.10 M/s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_ITERATESINGLECMP}}
+\texttt{RenderSystem} (1 componente) sobre N entidades que cumplen su firma.
+\begin{table}[H]
+\centering
+\begin{tabular}{rrrrrr}
+\toprule
+Entidades & Media & Mediana & Desv. t\'ipica & CV & Throughput \\
+\midrule
+1\,000 & 603.2 ns & 592.8 ns & 52.1 ns & 8.64\,\% & 1.70 G/s \\
+10\,000 & 6.503 \textmu s & 6.572 \textmu s & 366.6 ns & 5.64\,\% & 1.57 G/s \\
+100\,000 & 88.549 \textmu s & 87.962 \textmu s & 1.684 \textmu s & 1.90\,\% & 1.15 G/s \\
+1\,000\,000 & 2.534 ms & 2.528 ms & 37.264 \textmu s & 1.47\,\% & 400.11 M/s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_ITERATETWOCMPS}}
+\texttt{PhysicsSystem} (2 componentes) sobre N entidades que cumplen su firma.
+\begin{table}[H]
+\centering
+\begin{tabular}{rrrrrr}
+\toprule
+Entidades & Media & Mediana & Desv. t\'ipica & CV & Throughput \\
+\midrule
+1\,000 & 1.049 \textmu s & 1.053 \textmu s & 36.1 ns & 3.44\,\% & 969.94 M/s \\
+10\,000 & 10.058 \textmu s & 10.029 \textmu s & 190.1 ns & 1.89\,\% & 1.00 G/s \\
+100\,000 & 129.298 \textmu s & 126.742 \textmu s & 9.216 \textmu s & 7.13\,\% & 785.09 M/s \\
+1\,000\,000 & 3.364 ms & 3.252 ms & 241.797 \textmu s & 7.19\,\% & 303.62 M/s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_ITERATETWOCMPSHALF}}
+\texttt{PhysicsSystem} sobre N entidades de las que solo la mitad cumple su firma. El throughput cuenta las N/2 entidades recorridas.
+\begin{table}[H]
+\centering
+\begin{tabular}{rrrrrr}
+\toprule
+Entidades & Media & Mediana & Desv. t\'ipica & CV & Throughput \\
+\midrule
+1\,000 & 578.7 ns & 568.6 ns & 28.4 ns & 4.91\,\% & 876.88 M/s \\
+10\,000 & 6.081 \textmu s & 6.220 \textmu s & 245.7 ns & 4.04\,\% & 839.26 M/s \\
+100\,000 & 92.003 \textmu s & 91.119 \textmu s & 3.042 \textmu s & 3.31\,\% & 549.77 M/s \\
+1\,000\,000 & 2.553 ms & 2.533 ms & 129.991 \textmu s & 5.09\,\% & 197.06 M/s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_ADDREMOVECMP}}
+Añadir y quitar \texttt{CHealth} a N entidades con sistemas registrados, sin que cambie ninguna caché. Cada entidad cuenta como 2 operaciones.
+\begin{table}[H]
+\centering
+\begin{tabular}{rrrrrr}
+\toprule
+Entidades & Media & Mediana & Desv. t\'ipica & CV & Throughput \\
+\midrule
+1\,000 & 5.326 \textmu s & 5.342 \textmu s & 79.9 ns & 1.50\,\% & 375.53 M/s \\
+10\,000 & 55.070 \textmu s & 54.127 \textmu s & 2.826 \textmu s & 5.13\,\% & 367.19 M/s \\
+100\,000 & 553.645 \textmu s & 539.009 \textmu s & 37.421 \textmu s & 6.76\,\% & 361.61 M/s \\
+1\,000\,000 & 9.827 ms & 9.766 ms & 595.071 \textmu s & 6.06\,\% & 209.93 M/s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_ADDREMOVECMPCACHED}}
+Añadir y quitar \texttt{CHealth} a N entidades: cada una entra y sale de la caché de \texttt{HealthSystem}. Cada entidad cuenta como 2 operaciones.
+\begin{table}[H]
+\centering
+\begin{tabular}{rrrrrr}
+\toprule
+Entidades & Media & Mediana & Desv. t\'ipica & CV & Throughput \\
+\midrule
+1\,000 & 108.008 \textmu s & 107.914 \textmu s & 418.0 ns & 0.39\,\% & 18.84 M/s \\
+10\,000 & 10.793 ms & 10.810 ms & 61.463 \textmu s & 0.57\,\% & 1.90 M/s \\
+100\,000 & 1.143 s & 1.132 s & 54.271 ms & 4.75\,\% & 178.10 k/s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_REGISTERSYSTEM}}
+Registrar \texttt{PhysicsSystem} con N entidades ya creadas que cumplen su firma (crear y rellenar la caché).
+\begin{table}[H]
+\centering
+\begin{tabular}{rrrrrr}
+\toprule
+Entidades & Media & Mediana & Desv. t\'ipica & CV & Throughput \\
+\midrule
+1\,000 & 1.400 \textmu s & 1.403 \textmu s & 17.8 ns & 1.27\,\% & 845.42 M/s \\
+10\,000 & 12.222 \textmu s & 12.069 \textmu s & 487.2 ns & 3.99\,\% & 926.17 M/s \\
+100\,000 & 330.981 \textmu s & 331.646 \textmu s & 2.186 \textmu s & 0.66\,\% & 300.93 M/s \\
+1\,000\,000 & 4.910 ms & 4.930 ms & 75.860 \textmu s & 1.54\,\% & 203.65 M/s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_DESTROYENTITIESCACHED}}
+Destruir N entidades que están en las cachés de dos sistemas (\texttt{PhysicsSystem} y \texttt{HealthSystem}).
+\begin{table}[H]
+\centering
+\begin{tabular}{rrrrrr}
+\toprule
+Entidades & Media & Mediana & Desv. t\'ipica & CV & Throughput \\
+\midrule
+1\,000 & 220.159 \textmu s & 219.997 \textmu s & 896.8 ns & 0.41\,\% & 4.53 M/s \\
+10\,000 & 23.306 ms & 23.294 ms & 454.360 \textmu s & 1.95\,\% & 441.25 k/s \\
+100\,000 & 2.237 s & 2.230 s & 72.676 ms & 3.25\,\% & 45.33 k/s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{\texttt{BM\_GAMESCENARIO}}
+Un frame con \texttt{PhysicsSystem}, \texttt{HealthSystem} y \texttt{RenderSystem} sobre un mundo heterogéneo: 50\,\% unidades, 30\,\% decorado y 20\,\% proyectiles.
+\begin{table}[H]
+\centering
+\begin{tabular}{rrrrrr}
+\toprule
+Entidades & Media & Mediana & Desv. t\'ipica & CV & Throughput \\
+\midrule
+1\,000 & 1.543 \textmu s & 1.505 \textmu s & 93.1 ns & 6.03\,\% & 654.90 M/s \\
+10\,000 & 16.359 \textmu s & 16.345 \textmu s & 191.7 ns & 1.17\,\% & 615.46 M/s \\
+100\,000 & 265.592 \textmu s & 267.264 \textmu s & 6.375 \textmu s & 2.40\,\% & 383.47 M/s \\
+1\,000\,000 & 7.321 ms & 7.285 ms & 107.512 \textmu s & 1.47\,\% & 138.41 M/s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\end{document}

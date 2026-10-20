@@ -39,6 +39,42 @@
                 "panel": "shared",
                 "clear": true
             }
+        },
+        {
+            "label": "Build + Run Benchmarks HeatStroke ECS (release)",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy", "Bypass",
+                "-File", "${workspaceFolder}/scripts/build_and_run_benchmarks.ps1",
+                "-Ecs", "hsecs"
+            ],
+            "group": "build",
+            "problemMatcher": ["$msCompile"],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            }
+        },
+        {
+            "label": "Build + Run Benchmarks EnTT (release)",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy", "Bypass",
+                "-File", "${workspaceFolder}/scripts/build_and_run_benchmarks.ps1",
+                "-Ecs", "entt"
+            ],
+            "group": "build",
+            "problemMatcher": ["$msCompile"],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            }
         }
     ]
 }

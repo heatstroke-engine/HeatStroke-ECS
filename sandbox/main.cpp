@@ -76,7 +76,7 @@ void seetype(auto)
 
 int main() {
 
-    HeatStroke::Log::initialize();
+    logInit();
 
     GameEngine GE;
 
@@ -94,8 +94,8 @@ int main() {
     GE.registerSystem<PhysicsSystem>();
     GE.registerSystem<RenderSystem>();
 
-    HeatStroke::Log::print("PHY System Cache id: " + std::to_string(PhysicsSystem::cache_index));
-    HeatStroke::Log::print("RENDER System Cache id: " + std::to_string(RenderSystem::cache_index));
+    logPrint("PHY System Cache id: " + std::to_string(PhysicsSystem::cache_index));
+    logPrint("RENDER System Cache id: " + std::to_string(RenderSystem::cache_index));
 
     GE.removeEntity(eID);
 

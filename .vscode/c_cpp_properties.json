@@ -6,7 +6,8 @@
             "includePath": [
                 "${workspaceFolder}/code/ecs/include",
                 "${workspaceFolder}/code/utils/include",
-                "${workspaceFolder}/code/mp/include"
+                "${workspaceFolder}/code/mp/include",
+                "${workspaceFolder}/benchmarks"
             ],
             "cppStandard": "c++23"
         }

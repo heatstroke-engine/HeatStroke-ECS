@@ -5,9 +5,11 @@
 cmake_minimum_required(VERSION 3.20)
 
 project(HeatStrokeECS
-    VERSION 0.1.0
+    VERSION 1.0.0
     LANGUAGES CXX   # este proyecto solo usa C++ (no C)
 )
+
+include(FetchContent) # To integrate benchmarks
 
 # =========================================================================
 # 2) ESTÁNDAR DE C++ Y FLAGS DEL COMPILADOR
@@ -46,6 +48,11 @@ add_library(hs_utils STATIC
 target_include_directories(hs_utils PUBLIC code/utils/include)
 target_compile_options(hs_utils PRIVATE ${CXX_FLAGS_COMUNES})
 
+# Modo debug: activa asserts, warnings y log solo en Debug (preset debug).
+# PUBLIC porque las macros se expanden en las cabeceras de ecs, que se compilan
+# en los .cpp de quien las incluya (sandbox, benchmarks...).
+target_compile_definitions(hs_utils PUBLIC $<$<CONFIG:Debug>:HS_DEBUG_MODE>)
+
 if(MINGW)
     # Enlaza el runtime de C++ de forma estática: el .exe resultante no
     # depende de libstdc++-6.dll / libgcc_s_*.dll al ejecutarse.
@@ -71,8 +78,45 @@ target_link_libraries(hs_ecs INTERFACE hs_mp hs_utils)
 # =========================================================================
 option(HSECS_BUILD_SANDBOX "Compilar el ejecutable de pruebas sandbox" ON)
 
+option(HSECS_BUILD_BENCHMARKS "Compilar el ejecutable de Google benchmarks" ON)
+
+option(HSECS_BUILD_ENTT_BENCHMARKS "Compilar el ejecutable de Google benchmarks con EnTT" ON)
+
 if(HSECS_BUILD_SANDBOX)
     add_executable(hsecs_sandbox sandbox/main.cpp)
     target_link_libraries(hsecs_sandbox PRIVATE hs_ecs)
     target_compile_options(hsecs_sandbox PRIVATE ${CXX_FLAGS_COMUNES})
+endif()
+
+if(HSECS_BUILD_BENCHMARKS OR HSECS_BUILD_ENTT_BENCHMARKS)
+    FetchContent_Declare(googlebenchmark GIT_REPOSITORY "https://github.com/google/benchmark.git" GIT_TAG v1.10.0 GIT_SHALLOW true)
+    # Disable default Google Benchmark ouwn tests
+    set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+    set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "" FORCE)
+    set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googlebenchmark)
+endif()
+
+if(HSECS_BUILD_BENCHMARKS)
+    add_executable(hsecs_benchmarks benchmarks/benchmarks.cpp
+        benchmarks/benchmarks.hpp)
+    target_link_libraries(hsecs_benchmarks PRIVATE hs_ecs)
+    target_link_libraries(hsecs_benchmarks PRIVATE benchmark::benchmark)
+    target_compile_options(hsecs_benchmarks PRIVATE ${CXX_FLAGS_COMUNES})
+endif()
+
+if(HSECS_BUILD_ENTT_BENCHMARKS)
+    # SYSTEM: EnTT headers are treated as system headers, so our -Wall -Wextra -Wpedantic don't warn about them
+    FetchContent_Declare(entt GIT_REPOSITORY "https://github.com/skypjack/entt.git" GIT_TAG v4.0.0 GIT_SHALLOW true SYSTEM)
+    FetchContent_MakeAvailable(entt)
+    add_executable(entt_benchmarks benchmarks/enttbenchmarks.cpp
+        benchmarks/enttbenchmarks.hpp)
+    target_link_libraries(entt_benchmarks PRIVATE benchmark::benchmark)
+    target_link_libraries(entt_benchmarks PRIVATE EnTT::EnTT)
+    target_compile_options(entt_benchmarks PRIVATE ${CXX_FLAGS_COMUNES})
+
+    if(MINGW)
+        # Same static runtime as hsecs_benchmarks (which inherits it from hs_utils), so both are linked the same way
+        target_link_options(entt_benchmarks PRIVATE -static-libgcc -static-libstdc++ -static)
+    endif()
 endif()

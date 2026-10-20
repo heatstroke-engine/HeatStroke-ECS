@@ -2,7 +2,116 @@
 
 Registro de progreso diario del desarrollo del ECS de arquetipos con job system multihilo, dentro del TFG de HeatStroke Engine.
 
-----> Obsidian
+---
+
+## 2026-10-21
+
+**Fase:** Fase1 - ECS basico
+
+**Tiempo invertido:** 2h
+
+### Qué he hecho hoy
+- Integrado EnTT (v4.0.0) con `FetchContent` como dependencia `SYSTEM`, con la opción `HSECS_BUILD_ENTT_BENCHMARKS` y el ejecutable `entt_benchmarks`. Se enlaza igual que `hsecs_benchmarks` (runtime estático), para que la comparación sea justa.
+- Reimplementados los 19 benchmarks con EnTT en `enttbenchmarks.cpp`, con los mismos nombres, componentes, tamaños y preparación del mundo. Además, 4 tests solo de EnTT que iteran con views (`*_VIEW`).
+- `build_and_run_benchmarks.ps1` acepta `-Ecs hsecs|entt` y guarda `<fecha>_<ecs>_benchmark.json`. Una tarea de VS Code para cada ECS.
+- Script `benchmark_to_latex.ps1`: genera un informe LaTeX con los resultados de un ECS.
+- Script `compare_benchmarks_to_latex.ps1`: empareja los dos JSON por test y tamaño y genera un informe LaTeX con la comparativa (resumen, gráficos con pgfplots y tablas por test con la relación HS/EnTT). El PDF se compila con Tectonic.
+
+### Decisiones de diseño
+- Equivalencias con EnTT: un tag es un componente vacío y un sistema registrado (con caché) es un *owning group*. Registrar un sistema = crear su group.
+- Un componente solo puede pertenecer a un group en EnTT: `HealthSystem` posee `CHealth` y solo observa `CTransform`, que pertenece al group de `PhysicsSystem`.
+- Los componentes están duplicados en `enttbenchmarks.hpp` porque ese ejecutable no enlaza `hs_ecs`; tienen que coincidir con los de `benchmarks.hpp`.
+
+### Problemas / bloqueos
+- En CMake el operador lógico es `OR`, no `||`: Google Benchmark tiene que descargarse si se compila cualquiera de los dos ejecutables.
+
+### Aprendizajes
+- Resultado con el tamaño mayor: HeatStroke es más rápido en 7 de 19 tests (destruir entidades con componentes sin sistemas, quitar 2 componentes, registrar un sistema...).
+- Lo que tiene cachés es el cuello de botella: `ADDREMOVECMPCACHED` y `DESTROYENTITIESCACHED` con 100K son ×474 y ×365 más lentos que EnTT, por el `std::erase` lineal.
+- La iteración es ~×8–×13 más lenta: `GAMESCENARIO` con 1M tarda 7,3 ms frente a 0,71 ms con groups y ~2 ms con views.
+- Ambos puntos son justo lo que debe resolver el ECS de arquetipos: datos contiguos por arquetipo y consultas que guardan arquetipos, no entidades.
+
+### Próximos pasos
+- Pasar a la Fase 2: ECS de arquetipos single thread.
+
+---
+
+## 2026-10-20
+
+**Fase:** Fase1 - ECS basico
+
+**Tiempo invertido:** 3h
+
+### Qué he hecho hoy
+- Completada la batería de benchmarks del ECS dummy (1K, 10K, 100K y 1M entidades):
+  - Creación: entidades vacías y añadir 1, 3 y 5 componentes.
+  - Destrucción: entidades vacías y con 1, 3 y 5 componentes.
+  - Quitar 1 y 2 componentes.
+  - Acceso con `getComponent`.
+  - Iteración con 1 y 2 componentes, y con solo la mitad de las entidades cumpliendo la firma (`HALF`).
+  - Añadir y quitar un componente sin cambios en las cachés y con la entidad entrando y saliendo de una caché (`ADDREMOVECMP` / `ADDREMOVECMPCACHED`).
+  - Destruir entidades que están en dos cachés (`DESTROYENTITIESCACHED`).
+  - Registro de un sistema con N entidades ya creadas (`REGISTERSYSTEM`).
+  - Escenario de juego (`GAMESCENARIO`): un frame con `PhysicsSystem`, `HealthSystem` y `RenderSystem` sobre un mundo heterogéneo (50 % unidades, 30 % decorado, 20 % proyectiles).
+- Añadidos `CHealth`, `CGeneric<N>` y `HealthSystem` a `benchmarks.hpp`.
+- Cada test tiene un comentario que explica qué mide y cómo se prepara el mundo.
+
+### Decisiones de diseño
+- Si lo que se mide cambia la estructura del mundo (crear, borrar, añadir o quitar), el mundo se reconstruye en cada iteración en pausa, con un `std::optional<GameEngine>` y `emplace()`. Si no la cambia (iterar, acceder, añadir y luego quitar), se construye una sola vez fuera del bucle.
+- Los tests con cachés cuadráticos (`ADDREMOVECMPCACHED` y `DESTROYENTITIESCACHED`) no llegan a 1M entidades: cada iteración tardaría minutos.
+- En `HALF` el throughput cuenta solo las entidades que recorre el `foreach` (`n/2`).
+
+### Problemas / bloqueos
+- Los tests de iteración reconstruían el mundo en cada vuelta: como el `update` es muy rápido, Google Benchmark hacía cientos de miles de iteraciones y cada una pagaba la preparación. Se arregló construyendo el mundo una sola vez.
+
+### Aprendizajes
+- **El precacheado es cuadrático en los cambios estructurales:** sacar una entidad de una caché es un `std::erase` lineal. Al multiplicar N por 10 el tiempo se multiplica por 100. Con 100K entidades, destruirlas tarda ~2,2 s frente a ~0,36 ms sin cachés.
+- **La iteración no contigua cuesta:** `HALF` recorre la mitad de entidades que `TWOCMPS` pero tarda prácticamente lo mismo, por los saltos en memoria y la cadena de indirecciones del `foreach` (caché → entidad → key → slotmap → dato).
+- **Escenario de juego:** con 1M entidades, tres sistemas triviales ya ocupan ~7,6 ms de los 16,6 ms de un frame a 60 FPS.
+- Formas de paliar el coste de las cachés: swap-and-pop con índice inverso (un sparse set, como EnTT) o cambios estructurales diferidos con command buffers. En un ECS de arquetipos el problema desaparece por diseño: las consultas guardan arquetipos, no entidades, y borrar es un swap-and-pop en la tabla del arquetipo.
+- Los command buffers serán necesarios igualmente con el job system, porque no se puede cambiar la estructura del mundo mientras otro hilo lo recorre.
+- Para comparar de forma justa con EnTT hay que medir su versión con views y con groups, y el ECS de arquetipos con 1 hilo y con N hilos, para separar lo que aporta el diseño de lo que aportan los hilos.
+
+### Próximos pasos
+- Sacar los resultados de todos los benchmarks.
+
+---
+
+## 2026-10-19
+
+**Fase:** Fase1 - ECS basico
+
+**Tiempo invertido:** 2h
+
+### Qué he hecho hoy
+- El modo debug lo decide CMake: `target_compile_definitions(hs_utils PUBLIC $<$<CONFIG:Debug>:HS_DEBUG_MODE>)`. Con el preset debug están activos los asserts, los warnings y el log; con release desaparecen. Ya no hay que comentar un `#define` a mano.
+- El log pasa a usarse con macros (`logInit()`, `logPrint(msg)`, `logTrace(msg)`), que en release se expanden a nada. Las implementaciones de `Log::print` y `Log::printTrace` pasan al `.cpp`.
+- Integrado Google Benchmark (v1.10.0) con `FetchContent`: CMake lo descarga y lo compila con el mismo compilador que el ECS. Se controla con la opción `HSECS_BUILD_BENCHMARKS` y genera el ejecutable `hsecs_benchmarks`.
+- Primer benchmark, `BM_CREATEENTITES`: crear N entidades (1K, 10K y 100K) en un manager vacío. La construcción y destrucción del manager quedan fuera de la medida (`PauseTiming`/`ResumeTiming` con un `std::optional<GameEngine>` y `emplace()`). Reporta el throughput con `SetItemsProcessed`.
+- Script `build_and_run_benchmarks.ps1` y tarea de VS Code: compila en release, ejecuta los benchmarks con 10 repeticiones (media, mediana, desviación y cv) y guarda los resultados en `benchmarks/results/<fecha>_benchmark.json`.
+
+### Decisiones de diseño
+- Los benchmarks se miden siempre en release: en debug los asserts y la falta de optimización falsean los resultados.
+- Google Benchmark se integra con `FetchContent` en lugar de instalarlo aparte: versión fijada en el repo, mismo compilador y nadie necesita instalar nada para compilar el proyecto.
+- No se mide la creación del manager, porque no ocurre durante el `update` del juego.
+- Los resultados se guardan en JSON, que además de los tiempos incluye la máquina (CPU, cachés) y la fecha, para documentarlos en la memoria.
+
+### Problemas / bloqueos
+- Lío con git: apliqué un stash sobre una versión desactualizada de `sw/ecs/basic/1.0` y el pull generó conflictos. Se resolvió abortando el merge, dejando la rama igual que `origin` y aplicando el stash en una rama nueva (`feature/10_benchmarks`).
+- CMake en Windows usa por defecto el generador de Visual Studio (NMake); hay que indicar Ninja y el g++ de MSYS2.
+- Puse los argumentos del ejecutable de benchmarks (`--benchmark_out`...) como flags del compilador; además `\r` dentro de una ruta en CMake se interpreta como retorno de carro y rompía `build.ninja`.
+
+### Aprendizajes
+- Funcionamiento de Google Benchmark: el bucle `for (auto _ : state)` lo controla la librería, los parámetros con `->Arg`/`->Range` y `state.range(0)`, `SetItemsProcessed` para el throughput y `DoNotOptimize` para que el compilador no elimine el trabajo medido.
+- Lo que hay al final del cuerpo del bucle (como el destructor de un objeto local) también se mide.
+- `#include "..."` busca primero en la carpeta del fichero; `#include <...>` solo en las rutas de include.
+- Una macro que se expande a nada garantiza que sus argumentos no se evalúan; una función `inline` vacía no.
+- Primeros resultados: crear entidades baja de ~360M/s con 1K a ~53M/s con 100K, por los `resize` del `SlotMap` (capacidad inicial 1000) y porque los datos ya no caben en caché.
+
+### Próximos pasos
+- Añadir el resto de tests de rendimiento.
+- Exportar los resultados estables a LaTeX para convertirlos en PDF.
+
 ---
 
 ## 2026-10-18

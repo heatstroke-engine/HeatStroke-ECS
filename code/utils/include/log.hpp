@@ -17,22 +17,11 @@ namespace HeatStroke
 
         ~Log();
 
-        inline static void printTrace(const std::string_view message,
+        static void printTrace(const std::string_view message,
                 const std::source_location location = 
-                        std::source_location::current())
-        {
-            std::clog << "file: "
-                << location.file_name() << '('
-                << location.line() << ':'
-                << location.column() << ") `"
-                << location.function_name() << "`: "
-                << message << '\n';
-        }
+                        std::source_location::current());
 
-        inline static void print(const std::string_view message)
-        {
-            std::clog << "[HEATSTROKE LOG] " << message << '\n';
-        }
+        static void print(const std::string_view message);
 
         Log(const Log& rhs) = delete;
         const Log& operator=(const Log& rhs) = delete;
@@ -41,4 +30,20 @@ namespace HeatStroke
             Log();
     };
 }
+
+// HS_DEBUG_MODE is defined by CMake in Debug builds. In Release the macros expand to nothing,
+// so their arguments (e.g. a std::format) are not even evaluated.
+#ifdef HS_DEBUG_MODE
+
+#define logInit()       HeatStroke::Log::initialize()   // Redirects the log to a file of this execution
+#define logPrint(msg)   HeatStroke::Log::print(msg)     // Prints the message
+#define logTrace(msg)   HeatStroke::Log::printTrace(msg) // Prints the message with the location of the call
+
+#else
+
+#define logInit()       static_cast<void>(0)
+#define logPrint(msg)   static_cast<void>(0)
+#define logTrace(msg)   static_cast<void>(0)
+
+#endif
 
