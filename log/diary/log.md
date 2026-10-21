@@ -6,6 +6,47 @@ Registro de progreso diario del desarrollo del ECS de arquetipos con job system 
 
 ## 2026-10-21
 
+**Fase:** Fase 2 - ECS de arquetipos (diseño)
+
+**Tiempo invertido:** 2h
+
+### Qué he hecho hoy
+- Creado `log/design/decisions.md`: registro de decisiones de diseño con contexto, opciones, decisión y consecuencias, para justificarlas en la memoria.
+- Las decisiones del ECS dummy pasan a ser histórico (H-01 a H-05): el ECS de arquetipos se diseña desde cero y no hereda nada.
+- Diseñado el núcleo de la fase 2:
+  - **D-02:** modelo de arquetipos.
+  - **D-03:** registro de componentes con tipos de C++ abiertos e ID asignado en ejecución (nivel B), con `ComponentInfo` type-erased como puerta entreabierta a componentes dinámicos.
+  - **D-04:** identidad del arquetipo = lista ordenada de IDs, con un bitset auxiliar para las queries.
+  - **D-05:** chunks de 16 KB con layout SoA, columnas alineadas a 64 B, política de borrado b (la última fila del último chunk tapa el hueco), pool global de chunks y cabecera fuera del chunk.
+  - **D-06:** los tags forman parte del arquetipo como componentes sin columna.
+  - **D-07:** transiciones con un grafo de arquetipos, aristas cacheadas y aristas por bundle.
+  - **D-08:** queries con caché de arquetipos y actualización incremental (pull), iteración por chunk y modos de acceso.
+  - **D-09:** command buffers explícitos en un buffer lineal de bytes, uno por sistema.
+  - **D-11:** IDs de 64 bits (índice + generación) y tabla de ubicaciones paginada con lista libre implícita.
+
+### Decisiones de diseño
+- Criterio general: al ser un proyecto académico, en algunos casos se elige la opción más sencilla, siempre que no comprometa la fase 3 (multihilo). Las alternativas más elaboradas quedan como mejoras futuras.
+- Fuera del TFG: componentes totalmente dinámicos, relaciones al estilo flecs y *shared components*.
+- Mejoras futuras si da tiempo: tags y componentes activables, transiciones por lotes e índice inverso de componente a arquetipos.
+
+### Problemas / bloqueos
+- Ninguno.
+
+### Aprendizajes
+- Cómo resuelven lo mismo flecs, Bevy, Unity DOTS y EnTT: identificación de arquetipos, grafo de transiciones, queries cacheadas y command buffers.
+- En un ECS de arquetipos el almacenamiento es type-erased sea cual sea el registro de componentes, porque las combinaciones se crean en ejecución.
+- SoA frente a AoS y AoSoA, *false sharing* y *4K aliasing*.
+- Las queries que guardan arquetipos en lugar de entidades no se tocan en los cambios estructurales: eso elimina el coste cuadrático de las cachés del dummy.
+- Para un RTS con lockstep, la aplicación de los command buffers tiene que ser determinista.
+
+### Próximos pasos
+- Cerrar la decisión de sistemas (declaración, dónde vive su query y orden de ejecución).
+- Empezar la implementación de abajo arriba: registro de componentes, chunks y pool, arquetipo, tabla de entidades, mundo, queries y command buffers.
+
+---
+
+## 2026-10-21
+
 **Fase:** Fase1 - ECS basico
 
 **Tiempo invertido:** 2h
