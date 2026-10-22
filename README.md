@@ -1,4 +1,4 @@
-# HS-ECS
+# Swelter-ECS
 
 An Entity Component System written in C++ for the **HeatStroke Engine**, a 2D game engine built from scratch.
 
