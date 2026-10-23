@@ -78,9 +78,9 @@ target_link_libraries(hs_ecs INTERFACE hs_mp hs_utils)
 # =========================================================================
 option(HSECS_BUILD_SANDBOX "Compilar el ejecutable de pruebas sandbox" ON)
 
-option(HSECS_BUILD_BENCHMARKS "Compilar el ejecutable de Google benchmarks" ON)
+option(HSECS_BUILD_BENCHMARKS "Compilar el ejecutable de Google benchmarks" OFF)
 
-option(HSECS_BUILD_ENTT_BENCHMARKS "Compilar el ejecutable de Google benchmarks con EnTT" ON)
+option(HSECS_BUILD_ENTT_BENCHMARKS "Compilar el ejecutable de Google benchmarks con EnTT" OFF)
 
 if(HSECS_BUILD_SANDBOX)
     add_executable(hsecs_sandbox sandbox/main.cpp)

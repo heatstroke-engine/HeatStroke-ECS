@@ -4,6 +4,47 @@ Registro de progreso diario del desarrollo del ECS de arquetipos con job system 
 
 ---
 
+## 2026-10-23
+
+**Fase:** Fase 2 - ECS de arquetipos (implementación)
+
+**Tiempo invertido:** 6h
+
+### Qué he hecho hoy
+- Creadas en GitHub las issues de la fase 2: la issue padre #21 y las sub-issues #12 a #20, una por capa (registro de componentes, chunks y pool, arquetipo SoA, tabla de entidades, mundo y grafo, queries, command buffers, sistemas y benchmarks).
+- Empezada la implementación de abajo arriba con la #12 (registro de componentes) en la rama `feature/12_component_registry`.
+- Eliminado el código del ECS dummy de `code/ecs/include` (`ecs.hpp`, `componentstorage.hpp`, `slotmap.hpp`) y desactivados los benchmarks en CMake hasta que el nuevo ECS los soporte.
+- Nuevo archivo `code/ecs/include/swelter.hpp` (namespace `Swelter`):
+  - `ComponentInfo`: descripción type-erased de un componente (`size`, `align`, `trivially_copyable`, `is_empty`) con punteros a función `destroy` y `move_construct`.
+  - `makeCMPInfo<T>()`: genera el `ComponentInfo` de un tipo con lambdas sin capturas (`std::destroy_at` y `std::construct_at`).
+  - Concept `Component`: tipo objeto, no array, alineación ≤ 64 B, constructor de movimiento y destructor `noexcept`.
+  - `CmpRegistry`: `id<T>()`, `registerComponents<Ts...>()`, `info(id)`, `info<T>()` y `count()`.
+- Pruebas en el sandbox: IDs consecutivos, `const T` y `T` comparten ID, flags de un tag y de `std::string`, y mover un `std::string` largo entre dos buffers usando solo la información del registro.
+
+### Decisiones de diseño
+- Registro global (como Unity y EnTT): `id<T>()` es la única fuente de verdad, registra el tipo la primera vez que se pide y el ID es su posición en el vector de `ComponentInfo`.
+- `registerComponents<Ts...>()` es opcional: sirve para fijar el orden de los IDs al arrancar y evitar registros concurrentes cuando haya hilos (pendiente un mutex).
+- `const` y `&` son formas de referirse a un componente, no componentes distintos: `id<T>()` normaliza con `std::remove_cvref_t` y el concept se comprueba sobre el tipo normalizado.
+- El `requires` va en `id<T>()` para que el error salga en la línea de quien llama y no dentro del registro.
+- Alineación máxima de 64 B porque las columnas del chunk se alinean a 64 B (D-05).
+- `id()` no es `noexcept`: el primer registro hace `emplace_back` y un `bad_alloc` se propaga en lugar de terminar el programa.
+
+### Problemas / bloqueos
+- `template<typename Component>` no aplica el concept: declara un parámetro de plantilla llamado `Component` que oculta el concept. `id<int[4]>()` fallaba dentro de `std::construct_at` con un error ilegible.
+- Comprobar el concept sobre el tipo sin normalizar rechazaba usos legítimos: `T&` no es un tipo objeto y `const std::string` no es *nothrow move constructible* (moverlo usa la copia).
+- Con `void`, el concept daba un error de `alignof` porque `is_object_v` no iba la primera.
+
+### Aprendizajes
+- Un concept restringe solo si va en lugar de `typename` (`template<Component T>`) o en una cláusula `requires`, que va detrás de `template<...>` o al final de la declaración, después de `noexcept`.
+- Las condiciones de un concept unidas con `&&` se evalúan de izquierda a derecha y se paran en la primera que falla: el orden importa para los mensajes de error.
+- Las lambdas sin capturas se convierten a punteros a función, lo que permite el type erasure sin `std::function` ni memoria dinámica.
+- Un `static` local dentro de una plantilla de función da un valor único por tipo, inicializado la primera vez que se llama.
+
+### Próximos pasos
+- #13: chunks de 16 KB y pool global de chunks (D-05).
+
+---
+
 ## 2026-10-21
 
 **Fase:** Fase 2 - ECS de arquetipos (diseño)
