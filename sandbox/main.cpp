@@ -1,103 +1,73 @@
 #include <iostream>
 
-#include <ecs.hpp>
+#include <swelter.hpp>
 #include <log.hpp>
 #include <format>
-/*
-    Dummy CMPs
-*/
-struct CTransform
-{
-    float x {0UL};
-    float y {0UL};
-};
-struct CPhysics
-{
-    float vx {0UL};
-    float vy {0UL};
-};
-struct CRender
-{
-    char sprite {'@'};
-};
-/*
-    Dummy TAgs
-*/
-struct TPlayer{};
-struct TEnemy{};
-struct TBullet{};
 
-
-
-using CMPs = MP::Typelist<CTransform, CPhysics, CRender>;
-using TAGs = MP::Typelist<TPlayer, TEnemy, TBullet >;
-
-using GameEngine = HeatStroke::EntityManager<CMPs, TAGs>;
-using Entity = GameEngine::Entity;
-
-/*
-    Dummy Systems
-*/
-struct PhysicsSystem
-{
-    using SCMPs = MP::Typelist<CPhysics, CTransform>;
-    using STAGs = MP::Typelist<>;
-
-    inline static std::size_t cache_index = 0;
-
-    void update(GameEngine& GE) const noexcept
-    {
-        auto&& f = ([](const HeatStroke::Key , const CPhysics& phy, CTransform& tra){
-            tra.x += phy.vx;
-            tra.y += phy.vy;
-        });
-
-        GE.foreach<PhysicsSystem>(f);
-    }
-};
-
-struct RenderSystem
-{
-    using SCMPs = MP::Typelist<CRender>;
-    using STAGs = MP::Typelist<>;
-
-    inline static std::size_t cache_index = 0;
-
-    void update(GameEngine& GE) const noexcept
-    {
-
-    }
-};
 
 void seetype(auto)
 {
     std::cout << __PRETTY_FUNCTION__ << "\n";
 }
 
+struct TPlayer {};
+struct NonMove 
+{
+    NonMove(NonMove&& other) = delete;
+};
+struct CTransform 
+{
+    float x;
+    float y;
+};
+
 int main() {
 
     logInit();
 
-    GameEngine GE;
-
-    HeatStroke::Key eID = GE.createEntity();
-    CPhysics p{33,57};
-    CTransform t{0,0};
-    CRender r{};
-    GE.addComponents(eID, p,t,r);
-
-    HeatStroke::Key eID2 = GE.createEntity();
-
-    GE.addComponent(eID2, CPhysics{5,5});
+    auto id1 = Swelter::CmpRegistry::id<int>();
+    auto id2 = Swelter::CmpRegistry::id<float>();
+    auto id3 = Swelter::CmpRegistry::id<double>();
+    auto id4 = Swelter::CmpRegistry::id<const int>();
+    auto id5 = Swelter::CmpRegistry::id<const std::string>();
+    auto id6 = Swelter::CmpRegistry::id<TPlayer>();
 
 
-    GE.registerSystem<PhysicsSystem>();
-    GE.registerSystem<RenderSystem>();
+    logPrint(std::format("ID1 {}", id1));
+    logPrint(std::format("ID2 {}", id2));
+    logPrint(std::format("ID3 {}", id3));
+    logPrint(std::format("ID4 {}", id4));
+    logPrint(std::format("ID5 {}", id5));
+    logPrint(std::format("ID6 {}", id6));
 
-    logPrint("PHY System Cache id: " + std::to_string(PhysicsSystem::cache_index));
-    logPrint("RENDER System Cache id: " + std::to_string(RenderSystem::cache_index));
+    Swelter::ComponentInfo stringinfo = Swelter::CmpRegistry::info<std::string>();
+    Swelter::ComponentInfo taginfo = Swelter::CmpRegistry::info<TPlayer>();
 
-    GE.removeEntity(eID);
+    debugAssertion(!stringinfo.trivially_copyable);
+    debugAssertion(!stringinfo.is_empty);
+
+    debugAssertion(taginfo.trivially_copyable);
+    debugAssertion(taginfo.size == 0);
+    debugAssertion(taginfo.is_empty);
+    debugAssertion(Swelter::CmpRegistry::count() == 5);
+
+    std::byte buff1[4096];
+    void* ptr = &buff1[0];
+    std::size_t espacio_restante = sizeof(buff1) - 0;
+    void* place = std::align(stringinfo.align, stringinfo.size, ptr, espacio_restante );
+    std::byte buff2[4096];
+    void* ptr2 = &buff2[0];
+    espacio_restante = sizeof(buff2) - 0;
+    void* place2 = std::align(stringinfo.align, stringinfo.size, ptr2, espacio_restante );
+
+    new (place) std::string("ODIOMIVIDAdfdsfdsfdsfwefwenkjfweshfuiwesjhifugwesnfui");
+
+    stringinfo.move_construct(place2,place);
+    stringinfo.destroy(place);
+
+    logPrint(*static_cast<std::string*>(place2));
+
+    stringinfo.destroy(place2);
 
     return 0;
 }
