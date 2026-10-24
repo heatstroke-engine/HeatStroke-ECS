@@ -4,6 +4,49 @@ Registro de progreso diario del desarrollo del ECS de arquetipos con job system 
 
 ---
 
+## 2026-10-24
+
+**Fase:** Fase 2 - ECS de arquetipos (implementación)
+
+**Tiempo invertido:** 4h
+
+### Qué he hecho hoy
+- Implementada la #13 (chunks y pool de chunks) en la rama `feature/13_chunk_pool`, dentro de `swelter.hpp`:
+  - Constantes `CHUNK_SIZE` (16 KB) y `COLUMN_ALIGN` (64 B) en el namespace `Swelter`. El concept `Component` usa `COLUMN_ALIGN` en lugar del `64` escrito a mano.
+  - `Chunk`: struct `alignas(COLUMN_ALIGN)` con un array de `std::byte` de `CHUNK_SIZE`, sin copia ni movimiento, y `static_assert` de que el tamaño es múltiplo de la alineación y de que `sizeof(Chunk) == CHUNK_SIZE`.
+  - `ChunkPool` global: `allocate()`, `deallocate()`, `ownedCount()` y `freeCount()`. Es dueño de todos los chunks (`std::vector<std::unique_ptr<Chunk>>`) y guarda los libres como punteros que solo observan (`std::vector<Chunk*>`), reutilizándolos en orden LIFO antes de reservar memoria nueva.
+  - En debug: aserciones de `nullptr`, de doble devolución y de que el chunk pertenece al pool, y relleno con `0xCD` al reservar y `0xDD` al devolver.
+- Pruebas en el sandbox: reutilización LIFO, alineación, ningún solapamiento entre cualquier pareja de chunks y contadores que confirman que se reutiliza antes de reservar.
+
+### Decisiones de diseño
+- Alineación de 64 B y no de 4 KB: el *4K aliasing* depende de la distancia entre direcciones dentro del chunk, no de dónde empieza; alinear a página solo serviría para localizar una cabecera dentro del chunk (descartado en D-05) y desperdiciaría hasta un 25 % de memoria.
+- RAII sin `new` desnudos: un único dueño con `unique_ptr` y punteros crudos solo para observar. `shared_ptr` descartado porque no hay propiedad compartida y añade contadores atómicos.
+- Reserva con `std::make_unique_for_overwrite` para no poner a cero 16 KB en cada chunk.
+- `frees` reserva capacidad al crecer `owned`, para que `deallocate` no reserve memoria nunca y sea `noexcept`.
+- Reserva de chunks de uno en uno: el estado estable es reutilización y la reserva por lotes solo acelera el crecimiento. Se mide en la #20; la interfaz no cambiaría. En la fase 3, cachés de chunks por hilo recargadas por lotes.
+- Pool global y no uno por arquetipo: con SoA, chunks contiguos no dejan contiguas las columnas, el prefetcher no cruza páginas de 4 KB y un pool por arquetipo retendría memoria con las migraciones de arquetipo, continuas en un RTS.
+
+### Problemas / bloqueos
+- `Chunk(const Chunk&&)` no es el constructor de copia sino uno de movimiento con `const`; la copia quedaba prohibida solo por una regla implícita. Corregido con las cuatro firmas canónicas borradas.
+- `sizeof(Chunk)` no se puede comprobar dentro del struct porque ahí el tipo aún es incompleto.
+- Los `memset` de depuración se ejecutaban también en release; ahora van dentro de `#ifdef HS_DEBUG_MODE`.
+- La prueba de solapamiento dependía del orden en que el heap devuelve las direcciones, y la primera corrección restaba enteros sin signo, que dan la vuelta y hacían que la prueba no pudiera fallar. Corregida con `std::max(a, b) - std::min(a, b)` sobre `std::uintptr_t`.
+- El build de release falla en `hsecs_benchmarks` porque su caché conserva los benchmarks en ON; se mira en la #20.
+
+### Aprendizajes
+- `new T` hace *default-initialization* (memoria sin tocar) y `new T()` hace *value-initialization*: con un constructor `= default`, pone todo el objeto a cero (`memset` visible en el ensamblador).
+- `std::vector` solo exige que sus elementos se puedan mover, así que `std::vector<std::unique_ptr<T>>` funciona; al crecer mueve los punteros, no los objetos, que no cambian de dirección.
+- La regla de RAII es que un puntero crudo nunca sea dueño, no que no existan punteros crudos.
+- `std::aligned_alloc` no funciona en Windows; el `new` alineado de C++17 sí.
+- Comparar con `<` punteros a objetos distintos no está garantizado por el estándar; con `std::uintptr_t` sí. Una resta sin signo solo es segura si el primero es mayor o igual.
+- Reservar 16 KB con `new` no es una llamada al sistema: el heap ya pide memoria al sistema en bloques grandes.
+
+### Próximos pasos
+- #14: arquetipo con layout SoA (D-04, D-05, D-06).
+- Añadir a D-05 las alternativas descartadas: alineación a 4 KB, reserva por lotes y pool por arquetipo.
+
+---
+
 ## 2026-10-23
 
 **Fase:** Fase 2 - ECS de arquetipos (implementación)
